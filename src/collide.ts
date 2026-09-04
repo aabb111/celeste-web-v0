@@ -7,15 +7,22 @@ const LEDGE_CATCH = 14;
 
 export function moveAndCollide(player: Player, level: Level, dt: number) {
   const prevBottom = player.y + PLAYER_H;
+  const wasOnGround = player.onGround;
   player.x += player.vx * dt;
-  resolveAxis(player, level, "x", prevBottom);
+  resolveAxis(player, level, "x", prevBottom, wasOnGround);
   player.y += player.vy * dt;
   player.onGround = false;
-  resolveAxis(player, level, "y", prevBottom);
+  resolveAxis(player, level, "y", prevBottom, wasOnGround);
   catchGoalLedge(player, level);
 }
 
-function resolveAxis(player: Player, level: Level, axis: "x" | "y", prevBottom: number) {
+function resolveAxis(
+  player: Player,
+  level: Level,
+  axis: "x" | "y",
+  prevBottom: number,
+  wasOnGround: boolean,
+) {
   const [x0, x1] = tileRange(player.x, PLAYER_W, TILE, COLS);
   const [y0, y1] = tileRange(player.y, PLAYER_H, TILE, ROWS);
 
@@ -37,7 +44,8 @@ function resolveAxis(player: Player, level: Level, axis: "x" | "y", prevBottom: 
         player.y = tileY - PLAYER_H;
         player.vy = 0;
         player.onGround = true;
-        player.jumped = false;
+        player.jumpTimer = 0;
+        if (!wasOnGround) player.landSquash = 1;
       } else if (player.vy < 0) {
         player.y = tileY + TILE;
         player.vy = 0;
@@ -56,5 +64,6 @@ function catchGoalLedge(player: Player, level: Level) {
   player.y = y - PLAYER_H;
   player.vy = 0;
   player.onGround = true;
-  player.jumped = false;
+  player.jumpTimer = 0;
+  player.landSquash = 1;
 }

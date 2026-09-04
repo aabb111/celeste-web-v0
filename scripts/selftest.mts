@@ -1,5 +1,6 @@
+import { createGame, tick } from "../src/game.ts";
 import { createLevel } from "../src/level.ts";
-import { TICK } from "../src/params.ts";
+import { P, TICK } from "../src/params.ts";
 import {
   PLAYER_H,
   PLAYER_W,
@@ -11,8 +12,9 @@ import {
 } from "../src/player.ts";
 import type { InputState } from "../src/input.ts";
 
-const hold = (x: number, jumpHeld: boolean, jumpPressed = false): InputState => ({
+const hold = (x: number, jumpHeld: boolean, jumpPressed = false, y = 0): InputState => ({
   x,
+  y,
   jumpHeld,
   jumpPressed,
   resetPressed: false,
@@ -79,12 +81,19 @@ assert(
 const pit = settleOnSpawn();
 const pitLevel = createLevel();
 let reached = false;
-for (let i = 0; i < 320; i++) {
+for (let i = 0; i < 400; i++) {
+  const onLast = pit.x >= 24 * 8 - 4;
+  const distToPit = 28 * 8 - (pit.x + PLAYER_W);
   const probeX = pit.x + PLAYER_W + 2;
   const probeY = pit.y + PLAYER_H + 1;
   const aheadSolid = pitLevel.isSolid(Math.floor(probeX / 8), Math.floor(probeY / 8));
-  const jumpNow = pit.onGround && !aheadSolid;
-  integratePlayer(pit, hold(1, jumpNow || !pit.onGround, jumpNow), pitLevel, TICK);
+  const jumpNow = pit.onGround && (onLast ? distToPit < 16 : !aheadSolid);
+  // Early gaps: short hop so VarJumpTime does not sail over lower terraces.
+  // Last ledge: hold the full arc so the downhill pit still clears.
+  const jumpHeld = onLast
+    ? jumpNow || !pit.onGround
+    : jumpNow || (!pit.onGround && pit.jumpTimer > P.varJumpTime - 4 * TICK);
+  integratePlayer(pit, hold(1, jumpHeld, jumpNow), pitLevel, TICK);
   if (pitLevel.hitsFlag(playerRect(pit))) {
     reached = true;
     break;
@@ -129,5 +138,55 @@ for (let i = 0; i < 120; i++) {
   }
 }
 assert("pit is clearable with an edge tap", tapReached, `x=${tap.x} y=${tap.y}`);
+
+const booster = settleOnSpawn();
+const facing = booster.facing;
+simulate(booster, hold(0, true, true), 1);
+assert(
+  "jump h-boost uses facing when no run input",
+  Math.abs(booster.vx - P.jumpHBoost * facing) < 1,
+  `vx=${booster.vx}`,
+);
+
+const varJumper = settleOnSpawn();
+simulate(varJumper, hold(0, true, true), 1);
+simulate(varJumper, hold(0, true), 10);
+assert(
+  "var jump holds rise speed while jump is held",
+  varJumper.vy <= P.jumpVelocity + 1,
+  `vy=${varJumper.vy}`,
+);
+
+const fallLevel = createLevel();
+const faller = createPlayer(12 * 8 + 4, -40);
+for (let i = 0; i < 90; i++) integratePlayer(faller, hold(0, false), fallLevel, TICK);
+assert("max fall clamps to 160", Math.abs(faller.vy - P.maxFall) < 0.5, `vy=${faller.vy}`);
+
+const fastFaller = createPlayer(12 * 8 + 4, -40);
+for (let i = 0; i < 90; i++) integratePlayer(fastFaller, hold(0, false, false, 1), fallLevel, TICK);
+assert("down held allows fast max fall", fastFaller.vy > P.maxFall + 10, `vy=${fastFaller.vy}`);
+assert("fast fall clamps to 240", fastFaller.vy <= P.fastMaxFall + 0.01, `vy=${fastFaller.vy}`);
+
+const air = createPlayer(16, 0);
+simulate(air, hold(1, false), 6);
+const airExpected = P.groundAccel * P.airMult * TICK * 6;
+assert("air accel uses AirMult 0.65", Math.abs(air.vx - airExpected) < 0.5, `vx=${air.vx} expected=${airExpected}`);
+
+const dead = createGame();
+dead.player.y = 200;
+tick(dead, hold(0, false));
+assert("death starts unreadably long freeze", dead.mode === "dead", `mode=${dead.mode}`);
+const deathFrames = Math.ceil(P.deathEffect / TICK);
+for (let i = 0; i < deathFrames - 1; i++) tick(dead, hold(1, true, true));
+assert("no input during death effect", dead.mode === "dead", `mode=${dead.mode}`);
+tick(dead, hold(0, false));
+assert("respawn clears velocity", dead.player.vx === 0 && dead.player.vy === 0);
+assert("intro locks input after body place", dead.mode === "intro", `mode=${dead.mode}`);
+const introX = dead.player.x;
+const introFrames = Math.ceil(P.introRespawn / TICK);
+for (let i = 0; i < introFrames - 1; i++) tick(dead, hold(1, true, true));
+assert("still intro before window ends", dead.mode === "intro" && dead.player.x === introX);
+tick(dead, hold(0, false));
+assert("play resumes after intro", dead.mode === "play", `mode=${dead.mode}`);
 
 console.log("all self-tests passed");

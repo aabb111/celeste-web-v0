@@ -15,7 +15,7 @@ export type Game = {
   level: Level;
   player: Player;
   activeCheckpoint: number;
-  mode: "play" | "dead" | "won";
+  mode: "play" | "dead" | "intro" | "won";
   deathTimer: number;
   status: string;
 };
@@ -28,7 +28,7 @@ export function createGame(): Game {
     activeCheckpoint: 0,
     mode: "play",
     deathTimer: 0,
-    status: "Run, jump, hold Space to float. Clear the red pit to flag G.",
+    status: "Run, jump, hold Space. Down to fast-fall. Clear the red pit to G.",
   };
 }
 
@@ -52,6 +52,11 @@ export function tick(game: Game, input: InputState) {
 
   if (game.mode === "dead") {
     stepDeath(game);
+    return;
+  }
+
+  if (game.mode === "intro") {
+    stepIntro(game);
     return;
   }
 
@@ -85,10 +90,18 @@ function beginDeath(game: Game) {
 
 function stepDeath(game: Game) {
   game.deathTimer += TICK;
-  if (game.deathTimer < P.respawnDelay) return;
+  if (game.deathTimer < P.deathEffect) return;
 
   const origin = game.level.respawnAt(game.activeCheckpoint);
   resetPlayer(game.player, origin.x, origin.y);
+  game.mode = "intro";
+  game.deathTimer = 0;
+  game.status = game.activeCheckpoint > 0 ? "Respawning at checkpoint…" : "Respawning at start…";
+}
+
+function stepIntro(game: Game) {
+  game.deathTimer += TICK;
+  if (game.deathTimer < P.introRespawn) return;
   game.mode = "play";
   game.deathTimer = 0;
   game.status = game.activeCheckpoint > 0 ? "Respawned at checkpoint." : "Respawned at start.";
@@ -96,13 +109,12 @@ function stepDeath(game: Game) {
 
 export function paint(ctx: CanvasRenderingContext2D, game: Game) {
   const freezeFlash =
-    game.mode === "dead" && game.deathTimer < P.deathFreeze
-      ? Math.floor(game.deathTimer * 20)
-      : 1;
+    game.mode === "dead" ? Math.floor(game.deathTimer * 20) : 1;
   render(ctx, game.level, game.player, {
     activeCheckpoint: game.activeCheckpoint,
     status: game.status,
     dead: game.mode === "dead",
+    intro: game.mode === "intro",
     won: game.mode === "won",
     freezeFlash,
   });

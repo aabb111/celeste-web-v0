@@ -45,6 +45,7 @@ function frame(now: number) {
   while (accumulator >= TICK) {
     const stepInput: InputState = {
       x: snapshot.x,
+      y: snapshot.y,
       jumpHeld: snapshot.jumpHeld,
       jumpPressed: snapshot.jumpPressed && !consumedJump,
       resetPressed: snapshot.resetPressed && !consumedReset,

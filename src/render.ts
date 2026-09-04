@@ -27,6 +27,7 @@ export function render(
     activeCheckpoint: number;
     status: string;
     dead: boolean;
+    intro?: boolean;
     won: boolean;
     freezeFlash: number;
   },
@@ -40,7 +41,7 @@ export function render(
   drawTiles(ctx, level);
   drawCheckpoint(ctx, level, opts.activeCheckpoint);
   drawFlag(ctx, level, opts.won);
-  drawPlayer(ctx, player, opts.dead, opts.freezeFlash);
+  drawPlayer(ctx, player, opts.dead, opts.freezeFlash, opts.intro === true);
   drawLabels(ctx, level);
   drawHud(ctx, opts.status, opts.won);
 }
@@ -97,20 +98,33 @@ function drawFlag(ctx: CanvasRenderingContext2D, level: Level, won: boolean) {
   ctx.fillRect(flag.x + 1, flag.y, flag.w - 1, 6);
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, dead: boolean, flash: number) {
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  player: Player,
+  dead: boolean,
+  flash: number,
+  intro: boolean,
+) {
   if (dead && flash % 2 === 0) return;
+  const squash = intro ? 1 : player.landSquash;
+  const sx = 1 + 0.35 * squash;
+  const sy = 1 - 0.35 * squash;
+  const w = PLAYER_W * sx;
+  const h = PLAYER_H * sy;
+  const x = player.x + (PLAYER_W - w) / 2;
+  const y = player.y + PLAYER_H - h;
   ctx.fillStyle = C.playerDark;
-  ctx.fillRect(player.x, player.y, PLAYER_W, PLAYER_H);
+  ctx.fillRect(x, y, w, h);
   ctx.fillStyle = C.player;
-  ctx.fillRect(player.x + 1, player.y + 1, PLAYER_W - 2, PLAYER_H - 3);
+  ctx.fillRect(x + 1, y + 1, Math.max(1, w - 2), Math.max(1, h - 3));
   ctx.fillStyle = C.hair;
-  ctx.fillRect(player.facing === 1 ? player.x + 4 : player.x, player.y - 2, 4, 3);
+  ctx.fillRect(player.facing === 1 ? x + w - 4 : x, y - 2, 4, 3);
 }
 
 function drawHud(ctx: CanvasRenderingContext2D, status: string, won: boolean) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("LEFT / RIGHT  move    SPACE / Z  jump    R  reset", 4, ROOM_H - 8);
+  ctx.fillText("LEFT / RIGHT  move    SPACE / Z  jump    DOWN  fast-fall    R  reset", 4, ROOM_H - 8);
   ctx.fillStyle = won ? C.cpOn : C.ink;
   ctx.fillText(status, 4, ROOM_H - 16);
 }
