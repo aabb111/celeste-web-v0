@@ -20,9 +20,11 @@ export const GROUND_TOP = 3;
 export const MID_TOP = 3;
 /** Landing after the 2-tile coyote gap. */
 export const LAND_TOP = 4;
-/** Safe ledge before the must-dash void; CP2 ≈ x29. */
-export const SAFE_TOP = 8;
-/** Goal surface. 6 tiles above SAFE so a pure jump cannot land. */
+/** Floor at the base of the climb well. CP2 ≈ x23. */
+export const CLIMB_BASE = 14;
+/** Top of the climb / dash ledge. CP3 ≈ x31. */
+export const CLIMB_TOP = 8;
+/** Goal surface. 6 tiles above the climb top so a same-height jump cannot land. */
 export const GOAL_TOP = 2;
 export const SPIKE_TOP = 16;
 
@@ -37,21 +39,24 @@ export function createLevel() {
     }
   };
 
-  // x0–8 run ground
-  fill(0, 8, GROUND_TOP, GROUND_TOP + 1, SOLID);
-  // x9–10 1-tile jump gap (void)
-  // x11–15 platform
-  fill(11, 15, MID_TOP, MID_TOP + 1, SOLID);
-  // x16–18 2-tile coyote gap (void)
-  // x19–22 landing
-  fill(19, 22, LAND_TOP, LAND_TOP + 1, SOLID);
-  // x23–27 spike pit (jump-buffer lesson)
-  fill(23, 27, SPIKE_TOP, ROWS - 1, SPIKE);
-  // x28–30 safe platform
-  fill(28, 30, SAFE_TOP, SAFE_TOP + 1, SOLID);
-  // x31–35 5-tile must-dash void (no spikes; 4 tiles is jumpable at same height)
-  // x36–39 goal + flag G
-  fill(36, 39, GOAL_TOP, ROWS - 1, SOLID);
+  // x0–4 run ground
+  fill(0, 4, GROUND_TOP, GROUND_TOP + 1, SOLID);
+  // x5 1-tile jump gap (void)
+  // x6–9 platform + CP1
+  fill(6, 9, MID_TOP, MID_TOP + 1, SOLID);
+  // x10–11 2-tile coyote gap (void)
+  // x12–15 landing
+  fill(12, 15, LAND_TOP, LAND_TOP + 1, SOLID);
+  // x16–20 spike pit (jump-buffer lesson)
+  fill(16, 20, SPIKE_TOP, ROWS - 1, SPIKE);
+  // x21–25 climb-base floor, CP2 ≈ x23
+  fill(21, 25, CLIMB_BASE, ROWS - 1, SOLID);
+  // x26–30 wall column, top at y=8 (6-tile climb from y=14)
+  fill(26, 30, CLIMB_TOP, ROWS - 1, SOLID);
+  // x31–32 climb-top run-up, CP3 ≈ x31
+  fill(31, 32, CLIMB_TOP, CLIMB_TOP + 1, SOLID);
+  // x33–36 4-tile must-dash void (no spikes). Goal is high enough that a jump cannot land.
+  fill(37, 39, GOAL_TOP, ROWS - 1, SOLID);
 
   const spawn = {
     x: 2 * TILE,
@@ -60,12 +65,13 @@ export function createLevel() {
 
   const checkpoints: Checkpoint[] = [
     { id: 0, x: spawn.x, y: spawn.y, w: 8, h: PLAYER_H },
-    { id: 1, x: 20 * TILE, y: LAND_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
-    { id: 2, x: 29 * TILE, y: SAFE_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
+    { id: 1, x: 7 * TILE, y: MID_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
+    { id: 2, x: 23 * TILE, y: CLIMB_BASE * TILE - PLAYER_H, w: 8, h: PLAYER_H },
+    { id: 3, x: 31 * TILE, y: CLIMB_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
   ];
 
   const flag: Flag = {
-    x: 37 * TILE + 1,
+    x: 38 * TILE + 1,
     y: GOAL_TOP * TILE - 16,
     w: 6,
     h: 16,
@@ -92,7 +98,7 @@ export function createLevel() {
     spawn,
     checkpoints,
     flag,
-    goalLedge: { x: 36 * TILE, y: GOAL_TOP * TILE, w: 4 * TILE, h: TILE },
+    goalLedge: { x: 37 * TILE, y: GOAL_TOP * TILE, w: 3 * TILE, h: TILE },
     at,
     isSolid(tx: number, ty: number) {
       return at(tx, ty) === SOLID;

@@ -16,6 +16,24 @@ export function moveAndCollide(player: Player, level: Level, dt: number) {
   catchGoalLedge(player, level);
 }
 
+/** Overlap a world AABB against solid tiles. */
+export function overlapsSolid(level: Level, x: number, y: number, w: number, h: number): boolean {
+  const [x0, x1] = tileRange(x, w, TILE, COLS);
+  const [y0, y1] = tileRange(y, h, TILE, ROWS);
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      if (level.isSolid(tx, ty)) return true;
+    }
+  }
+  return false;
+}
+
+/** Solid immediately beside the body (`dist` px probe). */
+export function againstWall(player: Player, level: Level, dir: 1 | -1, dist = 1): boolean {
+  if (dir > 0) return overlapsSolid(level, player.x + PLAYER_W, player.y, dist, PLAYER_H);
+  return overlapsSolid(level, player.x - dist, player.y, dist, PLAYER_H);
+}
+
 /** Celeste DashVFloorSnapDist — keep a horizontal dash stuck to the floor. */
 export function snapToFloor(player: Player, level: Level, dist: number) {
   if (player.onGround || player.vy < 0) return;

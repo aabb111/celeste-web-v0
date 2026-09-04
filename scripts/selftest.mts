@@ -1,5 +1,5 @@
 import { createGame, tick } from "../src/game.ts";
-import { createLevel, LAND_TOP, SAFE_TOP, TILE } from "../src/level.ts";
+import { createLevel, CLIMB_BASE, CLIMB_TOP, LAND_TOP, TILE } from "../src/level.ts";
 import { P, TICK } from "../src/params.ts";
 import {
   PLAYER_H,
@@ -18,13 +18,17 @@ const hold = (
   jumpPressed = false,
   y = 0,
   dashPressed = false,
+  grabHeld = false,
+  moveY = y > 0 ? 1 : 0,
 ): InputState => ({
   x,
   y,
+  moveY,
   jumpHeld,
   jumpPressed,
   dashHeld: dashPressed,
   dashPressed,
+  grabHeld,
   resetPressed: false,
 });
 
@@ -106,11 +110,11 @@ assert(
 );
 
 const fallLevel = createLevel();
-const faller = createPlayer(9 * TILE + 4, -40);
+const faller = createPlayer(10 * TILE + 2, -40);
 for (let i = 0; i < 90; i++) integratePlayer(faller, hold(0, false), fallLevel, TICK);
 assert("max fall clamps to 160", Math.abs(faller.vy - P.maxFall) < 0.5, `vy=${faller.vy}`);
 
-const fastFaller = createPlayer(9 * TILE + 4, -40);
+const fastFaller = createPlayer(10 * TILE + 2, -40);
 for (let i = 0; i < 90; i++) integratePlayer(fastFaller, hold(0, false, false, 1), fallLevel, TICK);
 assert("down held allows fast max fall", fastFaller.vy > P.maxFall + 10, `vy=${fastFaller.vy}`);
 assert("fast fall clamps to 240", fastFaller.vy <= P.fastMaxFall + 0.01, `vy=${fastFaller.vy}`);
@@ -224,15 +228,15 @@ function walkEarlyGaps() {
   const level = createLevel();
   const player = createPlayer(level.spawn.x, level.spawn.y);
   for (let i = 0; i < 8; i++) integratePlayer(player, hold(0, false), level, TICK);
-  for (let i = 0; i < 320; i++) {
+  for (let i = 0; i < 360; i++) {
     const probeX = player.x + PLAYER_W + 2;
     const probeY = player.y + PLAYER_H + 1;
     const aheadSolid = level.isSolid(Math.floor(probeX / TILE), Math.floor(probeY / TILE));
-    const onSafe = player.x >= 28 * TILE && player.x < 31 * TILE;
-    const jumpNow = player.onGround && !aheadSolid && player.x < 28 * TILE;
+    const onCp2 = player.x >= 21 * TILE && player.x < 26 * TILE && player.onGround && player.y > 80;
+    const jumpNow = player.onGround && !aheadSolid && player.x < 21 * TILE;
     const jumpHeld = jumpNow || (!player.onGround && player.jumpTimer > P.varJumpTime - 8 * TICK);
     integratePlayer(player, hold(1, jumpHeld, jumpNow), level, TICK);
-    if (onSafe && player.onGround) return { player, level, ok: true };
+    if (onCp2) return { player, level, ok: true };
     if (level.hitsSpike(playerRect(player)) || isOutOfBounds(player)) {
       return { player, level, ok: false };
     }
@@ -240,42 +244,50 @@ function walkEarlyGaps() {
   return { player, level, ok: false };
 }
 
-function jumpDashFromSafe(player: Player, level: ReturnType<typeof createLevel>, allowDash: boolean) {
+function climbWall(player: Player, level: ReturnType<typeof createLevel>) {
   for (let i = 0; i < 8; i++) integratePlayer(player, hold(0, false), level, TICK);
+  let grabbed = false;
+  for (let i = 0; i < 240; i++) {
+    const atWall = player.x + PLAYER_W >= 26 * TILE - 2;
+    const onTop = player.onGround && player.y <= CLIMB_TOP * TILE - PLAYER_H + 2 && player.x >= 26 * TILE - 4;
+    if (onTop) return true;
+    const grab = atWall || player.climbing;
+    if (player.climbing) grabbed = true;
+    const moveX = player.climbing ? 0 : 1;
+    integratePlayer(player, hold(moveX, false, false, 0, false, grab, player.climbing ? -1 : 0), level, TICK);
+  }
+  return grabbed && player.x >= 26 * TILE - 4 && player.y <= CLIMB_TOP * TILE - PLAYER_H + 8;
+}
+
+function dashFromClimbTop(player: Player, level: ReturnType<typeof createLevel>, allowDash: boolean) {
+  for (let i = 0; i < 8; i++) integratePlayer(player, hold(0, false), level, TICK);
+  for (let i = 0; i < 50 && player.x < 31 * TILE; i++) {
+    integratePlayer(player, hold(1, false), level, TICK);
+  }
   integratePlayer(player, hold(1, true, true, -1), level, TICK);
-  for (let i = 0; i < 8; i++) integratePlayer(player, hold(1, true, false, -1, allowDash && i === 7), level, TICK);
+  for (let i = 0; i < 8; i++) {
+    integratePlayer(player, hold(1, true, false, -1, allowDash && i === 7), level, TICK);
+  }
   for (let i = 0; i < 160; i++) {
     integratePlayer(player, hold(1, true, false, allowDash ? -1 : 0), level, TICK);
-    if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= 36 * TILE)) return true;
+    if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= 37 * TILE)) return true;
     if (level.hitsSpike(playerRect(player)) || isOutOfBounds(player)) return false;
   }
   return false;
 }
 
 const early = walkEarlyGaps();
-assert("early segments reach CP2 safe ledge", early.ok, `x=${early.player.x} y=${early.player.y}`);
+assert("early segments reach CP2 climb base", early.ok, `x=${early.player.x} y=${early.player.y}`);
 
-const fullLevel = createLevel();
-const fullPlayer = createPlayer(29 * TILE, SAFE_TOP * TILE - PLAYER_H);
-assert("jump+dash reaches flag G", jumpDashFromSafe(fullPlayer, fullLevel, true), `x=${fullPlayer.x} y=${fullPlayer.y}`);
-
-const jumpOnly = createPlayer(29 * TILE, SAFE_TOP * TILE - PLAYER_H);
-const jumpOnlyLevel = createLevel();
-assert(
-  "pure jump cannot clear must-dash gap",
-  !jumpDashFromSafe(jumpOnly, jumpOnlyLevel, false),
-  `x=${jumpOnly.x} y=${jumpOnly.y}`,
-);
-
-const pit = createPlayer(21 * TILE, LAND_TOP * TILE - PLAYER_H);
+const pit = createPlayer(14 * TILE, LAND_TOP * TILE - PLAYER_H);
 const pitLevel = createLevel();
 for (let i = 0; i < 8; i++) integratePlayer(pit, hold(0, false), pitLevel, TICK);
 integratePlayer(pit, hold(1, true, true), pitLevel, TICK);
 for (let i = 0; i < 8; i++) integratePlayer(pit, hold(1, true), pitLevel, TICK);
 let pitLanded = false;
-for (let i = 0; i < 120; i++) {
+for (let i = 0; i < 140; i++) {
   integratePlayer(pit, hold(1, false), pitLevel, TICK);
-  if (pit.onGround && pit.x >= 28 * TILE && pit.x < 31 * TILE) {
+  if (pit.onGround && pit.x >= 21 * TILE && pit.x < 26 * TILE) {
     pitLanded = true;
     break;
   }
@@ -285,27 +297,130 @@ for (let i = 0; i < 120; i++) {
 }
 assert("spike pit is clearable with a jump", pitLanded, `x=${pit.x} y=${pit.y}`);
 
-const dashFromSafe = createPlayer(29 * TILE, SAFE_TOP * TILE - PLAYER_H);
-const dashLevel = createLevel();
-for (let i = 0; i < 8; i++) integratePlayer(dashFromSafe, hold(0, false), dashLevel, TICK);
-integratePlayer(dashFromSafe, hold(1, true, true, -1), dashLevel, TICK);
-let dashed = false;
-let dashReached = false;
-for (let i = 0; i < 200; i++) {
-  const nearApex = !dashFromSafe.onGround && dashFromSafe.vy > P.jumpVelocity + 20 && dashFromSafe.vy < 40;
-  const dashNow = !dashed && nearApex && dashFromSafe.dashes > 0;
-  if (dashNow) dashed = true;
-  integratePlayer(dashFromSafe, hold(1, true, false, -1, dashNow), dashLevel, TICK);
-  if (dashLevel.hitsFlag(playerRect(dashFromSafe)) || dashFromSafe.onGround && dashFromSafe.x >= 36 * TILE) {
-    dashReached = true;
+const climber = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const climbLevel = createLevel();
+assert("climbs wall to y≈8 ledge", climbWall(climber, climbLevel), `x=${climber.x} y=${climber.y} climb=${climber.climbing} stam=${climber.stamina}`);
+
+const still = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const stillLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(still, hold(1, false), stillLevel, TICK);
+for (let i = 0; i < 8 && !still.climbing; i++) {
+  integratePlayer(still, hold(1, false, false, 0, false, true, 0), stillLevel, TICK);
+}
+assert("grabs wall", still.climbing, `x=${still.x} climb=${still.climbing}`);
+const stam0 = still.stamina;
+for (let i = 0; i < 60; i++) integratePlayer(still, hold(0, false, false, 0, false, true, 0), stillLevel, TICK);
+assert("still drain uses ClimbStillCost", stam0 - still.stamina > 8 && stam0 - still.stamina < 12, `d=${stam0 - still.stamina}`);
+
+const upCost = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const upLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(upCost, hold(1, false), upLevel, TICK);
+for (let i = 0; i < 8 && !upCost.climbing; i++) {
+  integratePlayer(upCost, hold(1, false, false, 0, false, true, -1), upLevel, TICK);
+}
+const noMove = Math.ceil(P.climbNoMoveTime / TICK) + 1;
+for (let i = 0; i < noMove; i++) integratePlayer(upCost, hold(0, false, false, 0, false, true, -1), upLevel, TICK);
+const stamUp0 = upCost.stamina;
+const yUp0 = upCost.y;
+for (let i = 0; i < 30; i++) integratePlayer(upCost, hold(0, false, false, 0, false, true, -1), upLevel, TICK);
+assert("climb up moves toward -Y", upCost.y < yUp0 - 10, `y0=${yUp0} y=${upCost.y}`);
+assert(
+  "climb up drains ClimbUpCost",
+  stamUp0 - upCost.stamina > 18 && stamUp0 - upCost.stamina < 28,
+  `d=${stamUp0 - upCost.stamina}`,
+);
+
+const tired = createPlayer(25 * TILE, 70);
+const tiredLevel = createLevel();
+tired.stamina = 19;
+tired.facing = 1;
+tired.onGround = false;
+for (let i = 0; i < 12; i++) integratePlayer(tired, hold(1, false, false, 0, false, true, 0), tiredLevel, TICK);
+assert("tired blocks starting grab", !tired.climbing && tired.stamina < P.climbTired, `climb=${tired.climbing} stam=${tired.stamina}`);
+
+const midTired = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const midLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(midTired, hold(1, false), midLevel, TICK);
+for (let i = 0; i < 8 && !midTired.climbing; i++) {
+  integratePlayer(midTired, hold(1, false, false, 0, false, true, -1), midLevel, TICK);
+}
+for (let i = 0; i < 20 && midTired.onGround; i++) {
+  integratePlayer(midTired, hold(0, false, false, 0, false, true, -1), midLevel, TICK);
+}
+assert("starts grab at full stamina", midTired.climbing && !midTired.onGround, `climb=${midTired.climbing} gnd=${midTired.onGround}`);
+midTired.stamina = 15;
+for (let i = 0; i < 10; i++) integratePlayer(midTired, hold(0, false, false, 0, false, true, -1), midLevel, TICK);
+assert("mid-climb continues while tired", midTired.climbing && midTired.stamina < 20, `climb=${midTired.climbing} stam=${midTired.stamina}`);
+
+const cJump = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const cJumpLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(cJump, hold(1, false), cJumpLevel, TICK);
+for (let i = 0; i < 8 && !cJump.climbing; i++) {
+  integratePlayer(cJump, hold(1, false, false, 0, false, true, -1), cJumpLevel, TICK);
+}
+for (let i = 0; i < 24 && cJump.onGround; i++) {
+  integratePlayer(cJump, hold(0, false, false, 0, false, true, -1), cJumpLevel, TICK);
+}
+const stamJump = cJump.stamina;
+integratePlayer(cJump, hold(0, true, true, 0, false, true, 0), cJumpLevel, TICK);
+assert("neutral grab jump is ClimbJump", !cJump.climbing && cJump.vy <= P.jumpVelocity + 1, `vy=${cJump.vy} climb=${cJump.climbing}`);
+assert("ClimbJump costs stamina", stamJump - cJump.stamina >= P.climbJumpCost - 0.01, `d=${stamJump - cJump.stamina}`);
+
+const wJump = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const wJumpLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(wJump, hold(1, false), wJumpLevel, TICK);
+for (let i = 0; i < 8 && !wJump.climbing; i++) {
+  integratePlayer(wJump, hold(1, false, false, 0, false, true, 0), wJumpLevel, TICK);
+}
+const stamW = wJump.stamina;
+integratePlayer(wJump, hold(-1, true, true, 0, false, true, 0), wJumpLevel, TICK);
+assert("away jump is WallJump", wJump.vx <= -P.wallJumpHSpeed + 1, `vx=${wJump.vx}`);
+assert("WallJump uses JumpSpeed", wJump.vy <= P.jumpVelocity + 1, `vy=${wJump.vy}`);
+assert("WallJump does not spend stamina", stamW - wJump.stamina < 1, `d=${stamW - wJump.stamina}`);
+
+const dashOff = createPlayer(24 * TILE, CLIMB_BASE * TILE - PLAYER_H);
+const dashOffLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(dashOff, hold(1, false), dashOffLevel, TICK);
+for (let i = 0; i < 8 && !dashOff.climbing; i++) {
+  integratePlayer(dashOff, hold(1, false, false, 0, false, true, 0), dashOffLevel, TICK);
+}
+assert("holding wall before dash-off", dashOff.climbing);
+integratePlayer(dashOff, hold(-1, false, false, 0, true, true, 0), dashOffLevel, TICK);
+assert("can dash off wall", dashOff.dashing && !dashOff.climbing, `dash=${dashOff.dashing} climb=${dashOff.climbing}`);
+
+const slider = createPlayer(24 * TILE, 40);
+const slideLevel = createLevel();
+slider.facing = 1;
+slider.vy = 80;
+let slid = false;
+for (let i = 0; i < 40; i++) {
+  integratePlayer(slider, hold(1, false), slideLevel, TICK);
+  if (slider.x + PLAYER_W >= 26 * TILE - 1 && slider.vy > 0 && slider.vy < P.maxFall - 20) {
+    slid = true;
     break;
   }
-  if (dashLevel.hitsSpike(playerRect(dashFromSafe)) || isOutOfBounds(dashFromSafe)) break;
 }
+assert("wall slide without grab slows fall", slid, `vy=${slider.vy} x=${slider.x}`);
+
+const top = createPlayer(31 * TILE, CLIMB_TOP * TILE - PLAYER_H);
+const topLevel = createLevel();
+assert("dash from CP3 reaches flag G", dashFromClimbTop(top, topLevel, true), `x=${top.x} y=${top.y}`);
+
+const jumpOnly = createPlayer(31 * TILE, CLIMB_TOP * TILE - PLAYER_H);
+const jumpOnlyLevel = createLevel();
 assert(
-  "must-dash section completable with jump+up-right dash",
-  dashReached,
-  `x=${dashFromSafe.x} y=${dashFromSafe.y} on=${dashFromSafe.onGround}`,
+  "pure jump cannot clear must-dash gap",
+  !dashFromClimbTop(jumpOnly, jumpOnlyLevel, false) && !jumpOnlyLevel.hitsFlag(playerRect(jumpOnly)),
+  `x=${jumpOnly.x} y=${jumpOnly.y}`,
+);
+
+const full = walkEarlyGaps();
+assert("full run reaches climb base", full.ok, `x=${full.player.x} y=${full.player.y}`);
+assert("full run climbs wall", climbWall(full.player, full.level), `x=${full.player.x} y=${full.player.y}`);
+assert(
+  "full run dashes to G",
+  dashFromClimbTop(full.player, full.level, true),
+  `x=${full.player.x} y=${full.player.y}`,
 );
 
 console.log("all self-tests passed");

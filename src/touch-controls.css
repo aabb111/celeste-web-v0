@@ -20,8 +20,23 @@
   left: max(12px, env(safe-area-inset-left, 0px));
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.touch-pad-move-top,
+.touch-pad-dirs {
+  display: flex;
   flex-direction: row;
   gap: 8px;
+}
+
+.touch-btn-grab {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
 }
 
 .touch-pad-actions {

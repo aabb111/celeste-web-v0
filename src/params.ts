@@ -2,7 +2,7 @@
 export const PLAYER_W = 8;
 export const PLAYER_H = 10;
 
-/** NoelFB/Celeste-style player feel (web subset: dash only, no wall grab). */
+/** NoelFB/Celeste-style player feel (web subset: dash + climb, no SuperWallJump). */
 export const P = {
   /** MaxRun */
   maxRunSpeed: 90,
@@ -62,6 +62,48 @@ export const P = {
   dodgeSlideSpeedMult: 1.2,
   /** DashVFloorSnapDist */
   dashFloorSnap: 3,
+  /** ClimbMaxStamina */
+  climbMaxStamina: 110,
+  /** ClimbTiredThreshold — cannot START a grab below this */
+  climbTired: 20,
+  /** ClimbUpCost ≈ 100 / 2.2 */
+  climbUpCost: 100 / 2.2,
+  /** ClimbStillCost */
+  climbStillCost: 10,
+  /** ClimbJumpCost */
+  climbJumpCost: 27.5,
+  /** ClimbUpSpeed (up is negative Y) */
+  climbUpSpeed: -45,
+  /** ClimbDownSpeed */
+  climbDownSpeed: 80,
+  /** ClimbSlipSpeed — slide when hands sit on the lip */
+  climbSlipSpeed: 30,
+  /** ClimbAccel */
+  climbAccel: 900,
+  /** ClimbGrabYMult — vy kept on grab start */
+  climbGrabYMult: 0.2,
+  /** ClimbNoMoveTime */
+  climbNoMoveTime: 0.1,
+  /** ClimbHopX */
+  climbHopX: 100,
+  /** ClimbHopY */
+  climbHopY: -120,
+  /** ClimbHopForceTime — lock move after a ledge hop */
+  climbHopForceTime: 0.2,
+  /** ClimbJumpBoostTime — away input converts ClimbJump → WallJump */
+  climbJumpBoostTime: 0.2,
+  /** WallJumpHSpeed = MaxRun + JumpHBoost */
+  wallJumpHSpeed: 130,
+  /** WallJumpForceTime */
+  wallJumpForceTime: 0.16,
+  /** WallJumpCheckDist (px) */
+  wallJumpCheckDist: 3,
+  /** ClimbCheckDist (px) */
+  climbCheckDist: 2,
+  /** WallSlideStartMax */
+  wallSlideStartMax: 20,
+  /** WallSlideTime */
+  wallSlideTime: 1.2,
 } as const;
 
 export const TICK = 1 / 60;

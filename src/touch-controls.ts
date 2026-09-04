@@ -42,8 +42,14 @@ function createHud(): HTMLDivElement {
   hud.hidden = true;
   hud.innerHTML = `
     <div class="touch-pad touch-pad-move">
-      <button type="button" class="touch-btn touch-btn-dir" data-action="left" tabindex="-1" aria-label="Move left">←</button>
-      <button type="button" class="touch-btn touch-btn-dir" data-action="right" tabindex="-1" aria-label="Move right">→</button>
+      <div class="touch-pad-move-top">
+        <button type="button" class="touch-btn touch-btn-grab" data-action="grab" tabindex="-1" aria-label="Grab">Grab</button>
+        <button type="button" class="touch-btn touch-btn-dir touch-btn-up" data-action="up" tabindex="-1" aria-label="Climb up">↑</button>
+      </div>
+      <div class="touch-pad-dirs">
+        <button type="button" class="touch-btn touch-btn-dir" data-action="left" tabindex="-1" aria-label="Move left">←</button>
+        <button type="button" class="touch-btn touch-btn-dir" data-action="right" tabindex="-1" aria-label="Move right">→</button>
+      </div>
     </div>
     <div class="touch-pad touch-pad-actions">
       <button type="button" class="touch-btn touch-btn-dash" data-action="dash" tabindex="-1" aria-label="Dash">Dash</button>

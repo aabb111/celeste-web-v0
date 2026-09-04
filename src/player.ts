@@ -1,6 +1,19 @@
 import { approach } from "./aabb";
 import { moveAndCollide, snapToFloor } from "./collide";
 import {
+  applyWallBoost,
+  endClimb,
+  refillStamina,
+  resetClimb,
+  runAxis,
+  stepClimb,
+  tickForceMove,
+  tickWallSlide,
+  tryStartClimb,
+  tryWallJump,
+  wallSlideCap,
+} from "./climb";
+import {
   aimDash,
   bufferDash,
   canDash,
@@ -42,6 +55,17 @@ export type Player = {
   dashDirY: number;
   dashing: boolean;
   dashLaunch: boolean;
+  stamina: number;
+  climbing: boolean;
+  climbDir: 1 | -1;
+  climbNoMove: number;
+  lastClimbMove: number;
+  wallSlideTimer: number;
+  wallSlideDir: number;
+  wallBoostTimer: number;
+  wallBoostDir: number;
+  forceMoveX: number;
+  forceMoveXTimer: number;
 };
 
 export function createPlayer(x: number, y: number): Player {
@@ -60,6 +84,7 @@ export function createPlayer(x: number, y: number): Player {
     landSquash: 0,
   } as Player;
   resetDash(player);
+  resetClimb(player);
   return player;
 }
 
@@ -76,6 +101,7 @@ export function resetPlayer(player: Player, x: number, y: number) {
   player.maxFall = P.maxFall;
   player.landSquash = 0;
   resetDash(player);
+  resetClimb(player);
 }
 
 export function integratePlayer(player: Player, input: InputState, level: Level, dt: number) {
@@ -89,23 +115,37 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
   }
 
   if (player.dashLaunch) launchDash(player);
-  if (canDash(player)) startDash(player, input);
+  if (canDash(player)) {
+    endClimb(player);
+    startDash(player, input);
+  }
   if (isDashFrozen(player)) return;
 
   tickDashTimers(player, dt);
+  tickWallSlide(player, dt);
 
   if (player.dashing) {
     stepDash(player, input, level, dt);
     return;
   }
 
+  if (player.climbing) {
+    stepClimb(player, input, level, dt);
+    refillDashIfGrounded(player);
+    return;
+  }
+
   applyRun(player, input, dt);
   applyMaxFall(player, input, dt);
-  applyGravity(player, input, dt);
+  applyGravity(player, input, level, dt);
   applyVarJump(player, input, dt);
+  applyWallBoost(player, input, dt);
   moveAndCollide(player, level, dt);
-  applyJump(player, input, dt);
+  applyJump(player, input, level, dt);
+  tryStartClimb(player, input, level);
+  tickForceMove(player, dt);
   refillDashIfGrounded(player);
+  refillStamina(player);
 }
 
 function stepDash(player: Player, input: InputState, level: Level, dt: number) {
@@ -119,7 +159,7 @@ function stepDash(player: Player, input: InputState, level: Level, dt: number) {
 }
 
 function applyRun(player: Player, input: InputState, dt: number) {
-  const moveX = input.x;
+  const moveX = runAxis(player, input);
   if (moveX !== 0) player.facing = moveX > 0 ? 1 : -1;
 
   const mult = player.onGround ? 1 : P.airMult;
@@ -135,11 +175,13 @@ function applyMaxFall(player: Player, input: InputState, dt: number) {
   player.maxFall = approach(player.maxFall, target, P.fastMaxAccel * dt);
 }
 
-function applyGravity(player: Player, input: InputState, dt: number) {
+function applyGravity(player: Player, input: InputState, level: Level, dt: number) {
   const risingOrApex = Math.abs(player.vy) < P.halfGravThreshold;
   const halfGrav = input.jumpHeld && risingOrApex;
   const grav = P.gravity * (halfGrav ? P.holdJumpGravityMul : 1);
-  player.vy = approach(player.vy, player.maxFall, grav * dt);
+  const slide = !player.onGround ? wallSlideCap(player, input, level) : null;
+  const cap = slide ?? player.maxFall;
+  player.vy = approach(player.vy, cap, grav * dt);
 }
 
 function applyVarJump(player: Player, input: InputState, dt: number) {
@@ -149,19 +191,23 @@ function applyVarJump(player: Player, input: InputState, dt: number) {
   else player.jumpTimer = 0;
 }
 
-function applyJump(player: Player, input: InputState, dt: number) {
+function applyJump(player: Player, input: InputState, level: Level, dt: number) {
   player.coyote = player.onGround ? P.coyoteTime : Math.max(0, player.coyote - dt);
   player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
-  if (player.buffer <= 0 || player.coyote <= 0) return;
-
-  const boostDir = input.x !== 0 ? Math.sign(input.x) : player.facing;
-  player.vx += P.jumpHBoost * boostDir;
-  player.vy = P.jumpVelocity;
-  player.varJumpSpeed = player.vy;
-  player.onGround = false;
-  player.coyote = 0;
-  player.buffer = 0;
-  player.jumpTimer = P.varJumpTime;
+  if (player.buffer <= 0) return;
+  if (player.coyote > 0) {
+    const boostDir = input.x !== 0 ? Math.sign(input.x) : player.facing;
+    player.vx += P.jumpHBoost * boostDir;
+    player.vy = P.jumpVelocity;
+    player.varJumpSpeed = player.vy;
+    player.onGround = false;
+    player.coyote = 0;
+    player.buffer = 0;
+    player.jumpTimer = P.varJumpTime;
+    player.wallSlideTimer = P.wallSlideTime;
+    return;
+  }
+  tryWallJump(player, input, level);
 }
 
 export function isOutOfBounds(player: Player): boolean {

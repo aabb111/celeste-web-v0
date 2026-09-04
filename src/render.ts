@@ -1,4 +1,6 @@
+import { isTired } from "./climb";
 import { COLS, ROOM_H, ROOM_W, ROWS, SPIKE, SOLID, TILE, type Level } from "./level";
+import { P } from "./params";
 import { PLAYER_H, PLAYER_W, type Player } from "./player";
 
 const C = {
@@ -53,7 +55,8 @@ function drawLabels(ctx: CanvasRenderingContext2D, level: Level) {
   ctx.font = "5px monospace";
   ctx.fillText("S", 16, 22);
   ctx.fillText("G", level.flag.x, level.flag.y - 2);
-  ctx.fillText("dash", 252, 52);
+  ctx.fillText("climb", 200, 100);
+  ctx.fillText("dash", 268, 58);
 }
 
 function drawTiles(ctx: CanvasRenderingContext2D, level: Level) {
@@ -123,16 +126,21 @@ function drawPlayer(
   ctx.fillStyle =
     player.dashFreeze > 0 || player.dashing
       ? C.hairFlash
-      : player.dashes > 0
-        ? C.hairDash
-        : C.hair;
+      : isTired(player) || player.dashes <= 0
+        ? C.hair
+        : C.hairDash;
   ctx.fillRect(player.facing === 1 ? x + w - 4 : x, y - 2, 4, 3);
+  if (player.climbing || player.stamina < P.climbMaxStamina) {
+    const ratio = Math.max(0, player.stamina / P.climbMaxStamina);
+    ctx.fillStyle = isTired(player) ? C.hair : C.hairDash;
+    ctx.fillRect(x, y - 4, Math.max(1, w * ratio), 1);
+  }
 }
 
 function drawHud(ctx: CanvasRenderingContext2D, status: string, won: boolean) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("LEFT / RIGHT  move    SPACE / Z  jump    X  dash    DOWN  fast-fall    R  reset", 4, ROOM_H - 8);
+  ctx.fillText("ARROWS  move    SPACE / C  jump    Z  grab    X  dash    R  reset", 4, ROOM_H - 8);
   ctx.fillStyle = won ? C.cpOn : C.ink;
   ctx.fillText(status, 4, ROOM_H - 16);
 }

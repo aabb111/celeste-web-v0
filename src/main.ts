@@ -34,10 +34,12 @@ function frame(now: number) {
     const stepInput: InputState = {
       x: snapshot.x,
       y: snapshot.y,
+      moveY: snapshot.moveY,
       jumpHeld: snapshot.jumpHeld,
       jumpPressed: snapshot.jumpPressed && !consumedJump,
       dashHeld: snapshot.dashHeld,
       dashPressed: snapshot.dashPressed && !consumedDash,
+      grabHeld: snapshot.grabHeld,
       resetPressed: snapshot.resetPressed && !consumedReset,
     };
     tick(game, stepInput);

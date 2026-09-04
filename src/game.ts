@@ -28,7 +28,7 @@ export function createGame(): Game {
     activeCheckpoint: 0,
     mode: "play",
     deathTimer: 0,
-    status: "Run, jump, dash (X). Hold jump to aim up. Clear the last gap to G.",
+    status: "Run, jump, grab (Z), dash (X). Climb the wall, dash the last gap to G.",
   };
 }
 
