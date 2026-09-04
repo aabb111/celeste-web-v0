@@ -12,8 +12,35 @@ export type InputState = {
   resetPressed: boolean;
 };
 
+export type PadButton = "left" | "right" | "down" | "jump" | "reset";
+
+/** Mutable pad held-state, merged with keyboard in `poll`. */
+export type VirtualPad = {
+  left: boolean;
+  right: boolean;
+  down: boolean;
+  jump: boolean;
+  reset: boolean;
+  /** Latches a tap that is released before the next poll (jump buffer). */
+  jumpPulse: boolean;
+  resetPulse: boolean;
+};
+
+export function createVirtualPad(): VirtualPad {
+  return {
+    left: false,
+    right: false,
+    down: false,
+    jump: false,
+    reset: false,
+    jumpPulse: false,
+    resetPulse: false,
+  };
+}
+
 export function createInput(target: Window = window) {
-  const down = new Set<string>();
+  const keys = new Set<string>();
+  const virtual = createVirtualPad();
   let jumpWasDown = false;
   let resetWasDown = false;
 
@@ -21,26 +48,29 @@ export function createInput(target: Window = window) {
     if (LEFT.has(e.code) || RIGHT.has(e.code) || DOWN.has(e.code) || JUMP.has(e.code) || e.code === "KeyR") {
       e.preventDefault();
     }
-    down.add(e.code);
+    keys.add(e.code);
   };
   const onUp = (e: KeyboardEvent) => {
-    down.delete(e.code);
+    keys.delete(e.code);
   };
 
   target.addEventListener("keydown", onDown);
   target.addEventListener("keyup", onUp);
 
   return {
+    virtual,
     poll(): InputState {
-      const left = [...LEFT].some((k) => down.has(k));
-      const right = [...RIGHT].some((k) => down.has(k));
-      const downHeld = [...DOWN].some((k) => down.has(k));
-      const jumpHeld = [...JUMP].some((k) => down.has(k));
-      const resetHeld = down.has("KeyR");
+      const left = [...LEFT].some((k) => keys.has(k)) || virtual.left;
+      const right = [...RIGHT].some((k) => keys.has(k)) || virtual.right;
+      const downHeld = [...DOWN].some((k) => keys.has(k)) || virtual.down;
+      const jumpHeld = [...JUMP].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
+      const resetHeld = keys.has("KeyR") || virtual.reset || virtual.resetPulse;
       const jumpPressed = jumpHeld && !jumpWasDown;
       const resetPressed = resetHeld && !resetWasDown;
       jumpWasDown = jumpHeld;
       resetWasDown = resetHeld;
+      virtual.jumpPulse = false;
+      virtual.resetPulse = false;
       return {
         x: (right ? 1 : 0) - (left ? 1 : 0),
         y: downHeld ? 1 : 0,
