@@ -96,6 +96,8 @@ export function createInput(target: Window = window) {
       const downHeld = [...DOWN].some((k) => keys.has(k)) || virtual.down;
       const upHeld = [...UP].some((k) => keys.has(k)) || virtual.up;
       const grabHeld = [...GRAB].some((k) => keys.has(k)) || virtual.grab;
+      /** Touch grab climbs up (no ↑ key). Keyboard Z/V/Shift is unchanged. */
+      const padClimbUp = virtual.grab && !virtual.down;
       const jumpCore = [...JUMP_ONLY].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
       const jumpFromUp = upHeld && !grabHeld;
       const jumpHeld = jumpCore || jumpFromUp;
@@ -114,7 +116,7 @@ export function createInput(target: Window = window) {
       return {
         x: (right ? 1 : 0) - (left ? 1 : 0),
         y: (downHeld ? 1 : 0) - (aimUp ? 1 : 0),
-        moveY: (downHeld ? 1 : 0) - (upHeld ? 1 : 0),
+        moveY: (downHeld ? 1 : 0) - (upHeld || padClimbUp ? 1 : 0),
         jumpHeld,
         jumpPressed,
         dashHeld,

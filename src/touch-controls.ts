@@ -1,7 +1,8 @@
 import type { PadButton, VirtualPad } from "./input";
 import "./touch-controls.css";
 
-const SHOW_PADS = "(max-width: 768px), (pointer: coarse), (hover: none)";
+/** Show on phones/tablets in any orientation — never hide the pad in landscape. */
+const SHOW_PADS = "(pointer: coarse), (hover: none), (max-width: 768px), (max-height: 500px)";
 
 export function mountTouchControls(virtual: VirtualPad, canvas: HTMLCanvasElement) {
   const hud = createHud();
@@ -42,10 +43,7 @@ function createHud(): HTMLDivElement {
   hud.hidden = true;
   hud.innerHTML = `
     <div class="touch-pad touch-pad-move">
-      <div class="touch-pad-move-top">
-        <button type="button" class="touch-btn touch-btn-grab" data-action="grab" tabindex="-1" aria-label="Grab">Grab</button>
-        <button type="button" class="touch-btn touch-btn-dir touch-btn-up" data-action="up" tabindex="-1" aria-label="Climb up">↑</button>
-      </div>
+      <button type="button" class="touch-btn touch-btn-grab" data-action="grab" tabindex="-1" aria-label="Grab">Grab</button>
       <div class="touch-pad-dirs">
         <button type="button" class="touch-btn touch-btn-dir" data-action="left" tabindex="-1" aria-label="Move left">←</button>
         <button type="button" class="touch-btn touch-btn-dir" data-action="right" tabindex="-1" aria-label="Move right">→</button>

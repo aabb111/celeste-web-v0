@@ -1,3 +1,4 @@
+import { createCamera, followCamera, snapCamera, type Camera } from "./camera";
 import type { InputState } from "./input";
 import { createLevel, type Level, type RoomId } from "./level";
 import { P, TICK } from "./params";
@@ -15,6 +16,7 @@ export type Game = {
   roomId: RoomId;
   level: Level;
   player: Player;
+  camera: Camera;
   activeCheckpoint: number;
   mode: "play" | "dead" | "intro" | "won";
   deathTimer: number;
@@ -23,10 +25,14 @@ export type Game = {
 
 export function createGame(): Game {
   const level = createLevel("room1");
+  const player = createPlayer(level.spawn.x, level.spawn.y);
+  const camera = createCamera();
+  snapCamera(camera, player.x);
   return {
     roomId: level.roomId,
     level,
-    player: createPlayer(level.spawn.x, level.spawn.y),
+    player,
+    camera,
     activeCheckpoint: 0,
     mode: "play",
     deathTimer: 0,
@@ -39,6 +45,7 @@ export function resetGame(game: Game) {
   game.roomId = next.roomId;
   game.level = next.level;
   game.player = next.player;
+  game.camera = next.camera;
   game.activeCheckpoint = 0;
   game.mode = "play";
   game.deathTimer = 0;
@@ -50,6 +57,7 @@ export function loadRoom(game: Game, roomId: RoomId) {
   game.roomId = level.roomId;
   game.level = level;
   resetPlayer(game.player, level.spawn.x, level.spawn.y);
+  snapCamera(game.camera, game.player.x);
   game.activeCheckpoint = 0;
   game.mode = "play";
   game.deathTimer = 0;
@@ -96,6 +104,8 @@ export function tick(game: Game, input: InputState) {
     game.mode = "won";
     game.status = "Flag G2 — room clear.";
   }
+
+  followCamera(game.camera, game.player.x);
 }
 
 function beginDeath(game: Game) {
@@ -112,6 +122,7 @@ function stepDeath(game: Game) {
 
   const origin = game.level.respawnAt(game.activeCheckpoint);
   resetPlayer(game.player, origin.x, origin.y);
+  snapCamera(game.camera, game.player.x);
   game.mode = "intro";
   game.deathTimer = 0;
   game.status = game.activeCheckpoint > 0 ? "Respawning at checkpoint…" : "Respawning at start…";
@@ -132,7 +143,7 @@ export function paint(ctx: CanvasRenderingContext2D, game: Game) {
       : game.player.dashFreeze > 0
         ? 0
         : 1;
-  render(ctx, game.level, game.player, {
+  render(ctx, game.level, game.player, game.camera, {
     activeCheckpoint: game.activeCheckpoint,
     status: game.status,
     dead: game.mode === "dead",

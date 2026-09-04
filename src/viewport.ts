@@ -1,18 +1,18 @@
-import { ROOM_H, ROOM_W } from "./level";
+import { VIEW_H, VIEW_W } from "./level";
 
-/** Contain-fit the room in the visual viewport. Letterboxing is OK. */
+/** Contain-fit the camera view in the visual viewport. Letterboxing is OK. */
 export function fitCanvas(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
   const vv = window.visualViewport;
   const vw = vv?.width ?? window.innerWidth;
   const vh = vv?.height ?? window.innerHeight;
-  const cssScale = Math.min(vw / ROOM_W, vh / ROOM_H);
+  const cssScale = Math.min(vw / VIEW_W, vh / VIEW_H);
   const dpr = window.devicePixelRatio || 1;
   const pixelScale = Math.max(1, Math.round(cssScale * dpr));
 
-  canvas.width = ROOM_W * pixelScale;
-  canvas.height = ROOM_H * pixelScale;
-  canvas.style.width = `${ROOM_W * cssScale}px`;
-  canvas.style.height = `${ROOM_H * cssScale}px`;
+  canvas.width = VIEW_W * pixelScale;
+  canvas.height = VIEW_H * pixelScale;
+  canvas.style.width = `${VIEW_W * cssScale}px`;
+  canvas.style.height = `${VIEW_H * cssScale}px`;
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(pixelScale, 0, 0, pixelScale, 0, 0);
 }

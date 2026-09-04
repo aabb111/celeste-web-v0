@@ -1,5 +1,6 @@
+import type { Camera } from "./camera";
 import { isTired } from "./climb";
-import { COLS, ROOM_H, ROOM_W, ROWS, SPIKE, SOLID, TILE, type Level } from "./level";
+import { COLS, ROWS, SPIKE, SOLID, TILE, VIEW_H, VIEW_W, type Level } from "./level";
 import { P } from "./params";
 import { PLAYER_H, PLAYER_W, type Player } from "./player";
 
@@ -27,6 +28,7 @@ export function render(
   ctx: CanvasRenderingContext2D,
   level: Level,
   player: Player,
+  camera: Camera,
   opts: {
     activeCheckpoint: number;
     status: string;
@@ -36,18 +38,23 @@ export function render(
     freezeFlash: number;
   },
 ) {
-  ctx.clearRect(0, 0, ROOM_W, ROOM_H);
+  ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   ctx.fillStyle = C.sky;
-  ctx.fillRect(0, 0, ROOM_W, 64);
+  ctx.fillRect(0, 0, VIEW_W, 64);
   ctx.fillStyle = C.void;
-  ctx.fillRect(0, 64, ROOM_W, ROOM_H - 64);
+  ctx.fillRect(0, 64, VIEW_W, VIEW_H - 64);
 
+  const ox = Math.round(camera.x);
+  const oy = Math.round(camera.y);
+  ctx.save();
+  ctx.translate(-ox, -oy);
   drawTiles(ctx, level);
   drawDoor(ctx, level);
   drawCheckpoint(ctx, level, opts.activeCheckpoint);
   drawFlag(ctx, level, opts.won);
   drawPlayer(ctx, player, opts.dead, opts.freezeFlash, opts.intro === true);
   drawLabels(ctx, level);
+  ctx.restore();
   drawHud(ctx, opts.status, opts.won);
 }
 
@@ -151,7 +158,7 @@ function drawPlayer(
 function drawHud(ctx: CanvasRenderingContext2D, status: string, won: boolean) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("ARROWS  move    SPACE / C  jump    Z  grab    X  dash    R  reset", 4, ROOM_H - 8);
+  ctx.fillText("ARROWS  move    SPACE / C  jump    Z  grab    X  dash    R  reset", 4, VIEW_H - 8);
   ctx.fillStyle = won ? C.cpOn : C.ink;
-  ctx.fillText(status, 4, ROOM_H - 16);
+  ctx.fillText(status, 4, VIEW_H - 16);
 }

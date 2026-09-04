@@ -1,10 +1,14 @@
 import { PLAYER_H } from "./params";
 
 export const TILE = 8;
-export const COLS = 40;
+/** World width in tiles. Camera shows a 40-tile window. */
+export const COLS = 72;
+export const VIEW_COLS = 40;
 export const ROWS = 18;
 export const ROOM_W = COLS * TILE;
+export const VIEW_W = VIEW_COLS * TILE;
 export const ROOM_H = ROWS * TILE;
+export const VIEW_H = ROWS * TILE;
 
 export const EMPTY = 0;
 export const SOLID = 1;
