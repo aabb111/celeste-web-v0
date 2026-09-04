@@ -43,6 +43,7 @@ export function render(
   ctx.fillRect(0, 64, ROOM_W, ROOM_H - 64);
 
   drawTiles(ctx, level);
+  drawDoor(ctx, level);
   drawCheckpoint(ctx, level, opts.activeCheckpoint);
   drawFlag(ctx, level, opts.won);
   drawPlayer(ctx, player, opts.dead, opts.freezeFlash, opts.intro === true);
@@ -50,13 +51,23 @@ export function render(
   drawHud(ctx, opts.status, opts.won);
 }
 
+function drawDoor(ctx: CanvasRenderingContext2D, level: Level) {
+  const door = level.door;
+  if (!door) return;
+  ctx.fillStyle = "#2a3548";
+  ctx.fillRect(door.x, door.y, door.w, door.h);
+  ctx.fillStyle = "#0c1018";
+  ctx.fillRect(door.x + 3, door.y + 4, door.w - 6, door.h - 4);
+  ctx.fillStyle = C.solidTop;
+  ctx.fillRect(door.x, door.y, door.w, 1);
+}
+
 function drawLabels(ctx: CanvasRenderingContext2D, level: Level) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("S", 16, 22);
-  ctx.fillText("G", level.flag.x, level.flag.y - 2);
-  ctx.fillText("climb", 200, 100);
-  ctx.fillText("dash", 268, 58);
+  for (const label of level.labels) {
+    ctx.fillText(label.text, label.x, label.y);
+  }
 }
 
 function drawTiles(ctx: CanvasRenderingContext2D, level: Level) {

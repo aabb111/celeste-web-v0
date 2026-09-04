@@ -1,5 +1,5 @@
 import type { InputState } from "./input";
-import { createLevel, type Level } from "./level";
+import { createLevel, type Level, type RoomId } from "./level";
 import { P, TICK } from "./params";
 import {
   createPlayer,
@@ -12,6 +12,7 @@ import {
 import { render } from "./render";
 
 export type Game = {
+  roomId: RoomId;
   level: Level;
   player: Player;
   activeCheckpoint: number;
@@ -21,25 +22,38 @@ export type Game = {
 };
 
 export function createGame(): Game {
-  const level = createLevel();
+  const level = createLevel("room1");
   return {
+    roomId: level.roomId,
     level,
     player: createPlayer(level.spawn.x, level.spawn.y),
     activeCheckpoint: 0,
     mode: "play",
     deathTimer: 0,
-    status: "Run, jump, grab (Z), dash (X). Climb the wall, dash the last gap to G.",
+    status: level.status,
   };
 }
 
 export function resetGame(game: Game) {
   const next = createGame();
+  game.roomId = next.roomId;
   game.level = next.level;
   game.player = next.player;
   game.activeCheckpoint = 0;
   game.mode = "play";
   game.deathTimer = 0;
   game.status = next.status;
+}
+
+export function loadRoom(game: Game, roomId: RoomId) {
+  const level = createLevel(roomId);
+  game.roomId = level.roomId;
+  game.level = level;
+  resetPlayer(game.player, level.spawn.x, level.spawn.y);
+  game.activeCheckpoint = 0;
+  game.mode = "play";
+  game.deathTimer = 0;
+  game.status = level.status;
 }
 
 export function tick(game: Game, input: InputState) {
@@ -75,8 +89,12 @@ export function tick(game: Game, input: InputState) {
   }
 
   if (game.level.hitsFlag(rect)) {
+    if (game.level.nextRoom) {
+      loadRoom(game, game.level.nextRoom);
+      return;
+    }
     game.mode = "won";
-    game.status = "Flag G — room clear.";
+    game.status = "Flag G2 — room clear.";
   }
 }
 

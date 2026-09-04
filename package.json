@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "npx tsx scripts/selftest.mts"
+    "test": "npx tsx scripts/selftest.mts && npx tsx scripts/selftest-room2.mts"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
