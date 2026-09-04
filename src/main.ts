@@ -27,6 +27,7 @@ function frame(now: number) {
 
   const snapshot = input.poll();
   let consumedJump = false;
+  let consumedDash = false;
   let consumedReset = false;
 
   while (accumulator >= TICK) {
@@ -35,10 +36,13 @@ function frame(now: number) {
       y: snapshot.y,
       jumpHeld: snapshot.jumpHeld,
       jumpPressed: snapshot.jumpPressed && !consumedJump,
+      dashHeld: snapshot.dashHeld,
+      dashPressed: snapshot.dashPressed && !consumedDash,
       resetPressed: snapshot.resetPressed && !consumedReset,
     };
     tick(game, stepInput);
     consumedJump = consumedJump || stepInput.jumpPressed;
+    consumedDash = consumedDash || stepInput.dashPressed;
     consumedReset = consumedReset || stepInput.resetPressed;
     accumulator -= TICK;
   }

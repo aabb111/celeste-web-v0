@@ -1,5 +1,17 @@
 import { approach } from "./aabb";
-import { moveAndCollide } from "./collide";
+import { moveAndCollide, snapToFloor } from "./collide";
+import {
+  aimDash,
+  bufferDash,
+  canDash,
+  endDash,
+  isDashFrozen,
+  launchDash,
+  refillDashIfGrounded,
+  resetDash,
+  startDash,
+  tickDashTimers,
+} from "./dash";
 import { P, PLAYER_H, PLAYER_W } from "./params";
 import { ROOM_H, type Level } from "./level";
 import type { InputState } from "./input";
@@ -19,23 +31,36 @@ export type Player = {
   varJumpSpeed: number;
   maxFall: number;
   landSquash: number;
+  dashes: number;
+  dashTime: number;
+  dashFreeze: number;
+  dashCooldown: number;
+  dashRefillCooldown: number;
+  dashAttackTimer: number;
+  dashBuffer: number;
+  dashDirX: number;
+  dashDirY: number;
+  dashing: boolean;
+  dashLaunch: boolean;
 };
 
 export function createPlayer(x: number, y: number): Player {
-  return {
+  const player = {
     x,
     y,
     vx: 0,
     vy: 0,
     onGround: false,
-    facing: 1,
+    facing: 1 as const,
     coyote: 0,
     buffer: 0,
     jumpTimer: 0,
     varJumpSpeed: P.jumpVelocity,
     maxFall: P.maxFall,
     landSquash: 0,
-  };
+  } as Player;
+  resetDash(player);
+  return player;
 }
 
 export function resetPlayer(player: Player, x: number, y: number) {
@@ -50,17 +75,47 @@ export function resetPlayer(player: Player, x: number, y: number) {
   player.varJumpSpeed = P.jumpVelocity;
   player.maxFall = P.maxFall;
   player.landSquash = 0;
+  resetDash(player);
 }
 
 export function integratePlayer(player: Player, input: InputState, level: Level, dt: number) {
   player.landSquash = Math.max(0, player.landSquash - dt / 0.12);
+  bufferDash(player, input);
+
+  if (isDashFrozen(player)) {
+    player.dashFreeze = Math.max(0, player.dashFreeze - dt);
+    aimDash(player, input);
+    if (isDashFrozen(player)) return;
+  }
+
+  if (player.dashLaunch) launchDash(player);
+  if (canDash(player)) startDash(player, input);
+  if (isDashFrozen(player)) return;
+
+  tickDashTimers(player, dt);
+
+  if (player.dashing) {
+    stepDash(player, input, level, dt);
+    return;
+  }
+
   applyRun(player, input, dt);
   applyMaxFall(player, input, dt);
   applyGravity(player, input, dt);
   applyVarJump(player, input, dt);
-  // Collide before jump so landing refreshes coyote in time to consume the buffer.
   moveAndCollide(player, level, dt);
   applyJump(player, input, dt);
+  refillDashIfGrounded(player);
+}
+
+function stepDash(player: Player, input: InputState, level: Level, dt: number) {
+  player.dashTime -= dt;
+  moveAndCollide(player, level, dt);
+  if (player.dashDirY <= 0) snapToFloor(player, level, P.dashFloorSnap);
+  player.coyote = player.onGround ? P.coyoteTime : Math.max(0, player.coyote - dt);
+  player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
+  if (player.dashTime <= 0) endDash(player);
+  refillDashIfGrounded(player);
 }
 
 function applyRun(player: Player, input: InputState, dt: number) {
@@ -81,7 +136,6 @@ function applyMaxFall(player: Player, input: InputState, dt: number) {
 }
 
 function applyGravity(player: Player, input: InputState, dt: number) {
-  // Always integrate gravity so the AABB solver can re-stick feet to the floor.
   const risingOrApex = Math.abs(player.vy) < P.halfGravThreshold;
   const halfGrav = input.jumpHeld && risingOrApex;
   const grav = P.gravity * (halfGrav ? P.holdJumpGravityMul : 1);

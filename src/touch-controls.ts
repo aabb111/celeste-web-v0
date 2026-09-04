@@ -46,6 +46,7 @@ function createHud(): HTMLDivElement {
       <button type="button" class="touch-btn touch-btn-dir" data-action="right" tabindex="-1" aria-label="Move right">→</button>
     </div>
     <div class="touch-pad touch-pad-actions">
+      <button type="button" class="touch-btn touch-btn-dash" data-action="dash" tabindex="-1" aria-label="Dash">Dash</button>
       <button type="button" class="touch-btn touch-btn-jump" data-action="jump" tabindex="-1" aria-label="Jump">Jump</button>
       <button type="button" class="touch-btn touch-btn-down" data-action="down" tabindex="-1" aria-label="Down">Down</button>
     </div>
@@ -74,6 +75,7 @@ function bindPadButton(
     virtual[action] = true;
     el.classList.add("is-held");
     if (action === "jump") virtual.jumpPulse = true;
+    if (action === "dash") virtual.dashPulse = true;
     if (action === "reset") virtual.resetPulse = true;
   };
 

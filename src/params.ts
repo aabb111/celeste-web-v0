@@ -2,7 +2,7 @@
 export const PLAYER_W = 8;
 export const PLAYER_H = 10;
 
-/** NoelFB/Celeste-style player feel (web subset: no dash / wall grab). */
+/** NoelFB/Celeste-style player feel (web subset: dash only, no wall grab). */
 export const P = {
   /** MaxRun */
   maxRunSpeed: 90,
@@ -38,6 +38,30 @@ export const P = {
   deathEffect: 0.54,
   /** IntroRespawn — input locked after the body is placed */
   introRespawn: 0.6,
+  /** DashSpeed */
+  dashSpeed: 240,
+  /** DashTime */
+  dashTime: 0.15,
+  /** EndDashSpeed — AutoJump-style end velocity (no SuperJump) */
+  endDashSpeed: 160,
+  /** EndDashUpMult */
+  endDashUpMult: 0.75,
+  /** DashCooldown */
+  dashCooldown: 0.2,
+  /** DashRefillCooldown */
+  dashRefillCooldown: 0.1,
+  /** DashAttackTime — tracked even if unused by room objects */
+  dashAttackTime: 0.3,
+  /** Celeste.Freeze on dash start */
+  dashFreeze: 0.05,
+  /** Dash press buffer */
+  dashBuffer: 0.08,
+  /** MaxDashes */
+  maxDashes: 1,
+  /** DodgeSlideSpeedMult — grounded diagonal-down dash */
+  dodgeSlideSpeedMult: 1.2,
+  /** DashVFloorSnapDist */
+  dashFloorSnap: 3,
 } as const;
 
 export const TICK = 1 / 60;

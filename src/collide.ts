@@ -16,6 +16,27 @@ export function moveAndCollide(player: Player, level: Level, dt: number) {
   catchGoalLedge(player, level);
 }
 
+/** Celeste DashVFloorSnapDist — keep a horizontal dash stuck to the floor. */
+export function snapToFloor(player: Player, level: Level, dist: number) {
+  if (player.onGround || player.vy < 0) return;
+  const feet = player.y + PLAYER_H;
+  const [x0, x1] = tileRange(player.x, PLAYER_W, TILE, COLS);
+  const ty0 = Math.floor(feet / TILE);
+  const ty1 = Math.floor((feet + dist) / TILE);
+  for (let ty = ty0; ty <= ty1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      if (!level.isSolid(tx, ty)) continue;
+      const tileY = ty * TILE;
+      if (tileY >= feet - 0.01 && tileY <= feet + dist) {
+        player.y = tileY - PLAYER_H;
+        player.vy = 0;
+        player.onGround = true;
+        return;
+      }
+    }
+  }
+}
+
 function resolveAxis(
   player: Player,
   level: Level,
@@ -59,7 +80,7 @@ function catchGoalLedge(player: Player, level: Level) {
   const { x, y, w } = level.goalLedge;
   const feet = player.y + PLAYER_H;
   if (player.x + PLAYER_W < x - LEDGE_CATCH || player.x >= x + w) return;
-  if (feet < y - 2 || feet > y + 18) return;
+  if (feet < y - 2 || feet > y + 8) return;
   if (player.x + PLAYER_W < x) player.x = x - PLAYER_W + 3;
   player.y = y - PLAYER_H;
   player.vy = 0;

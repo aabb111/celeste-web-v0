@@ -28,7 +28,7 @@ export function createGame(): Game {
     activeCheckpoint: 0,
     mode: "play",
     deathTimer: 0,
-    status: "Run, jump, hold Space. Down to fast-fall. Clear the red pit to G.",
+    status: "Run, jump, dash (X). Hold jump to aim up. Clear the last gap to G.",
   };
 }
 
@@ -109,7 +109,11 @@ function stepIntro(game: Game) {
 
 export function paint(ctx: CanvasRenderingContext2D, game: Game) {
   const freezeFlash =
-    game.mode === "dead" ? Math.floor(game.deathTimer * 20) : 1;
+    game.mode === "dead"
+      ? Math.floor(game.deathTimer * 20)
+      : game.player.dashFreeze > 0
+        ? 0
+        : 1;
   render(ctx, game.level, game.player, {
     activeCheckpoint: game.activeCheckpoint,
     status: game.status,

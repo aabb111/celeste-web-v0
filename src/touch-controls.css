@@ -28,9 +28,14 @@
   position: absolute;
   right: max(12px, env(safe-area-inset-right, 0px));
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-areas:
+    "dash jump"
+    ". down";
+  grid-template-columns: auto auto;
   gap: 8px;
+  align-items: end;
+  justify-items: center;
 }
 
 .touch-btn {
@@ -61,7 +66,16 @@
   font-size: 22px;
 }
 
+.touch-btn-dash {
+  grid-area: dash;
+  width: 60px;
+  height: 60px;
+  min-width: 56px;
+  min-height: 56px;
+}
+
 .touch-btn-jump {
+  grid-area: jump;
   width: 64px;
   height: 64px;
   min-width: 64px;
@@ -69,7 +83,8 @@
 }
 
 .touch-btn-down {
-  width: 64px;
+  grid-area: down;
+  width: 48px;
   height: 48px;
   min-width: 48px;
   min-height: 48px;
@@ -79,16 +94,16 @@
   position: absolute;
   top: max(8px, env(safe-area-inset-top, 0px));
   right: max(8px, env(safe-area-inset-right, 0px));
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   pointer-events: auto;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.04em;
-  color: rgba(139, 151, 168, 0.58);
-  background: rgba(11, 14, 20, 0.2);
-  border-color: rgba(232, 238, 246, 0.1);
+  color: rgba(139, 151, 168, 0.4);
+  background: rgba(11, 14, 20, 0.14);
+  border-color: rgba(232, 238, 246, 0.08);
 }
 
 .touch-btn.is-held {

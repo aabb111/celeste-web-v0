@@ -1,4 +1,5 @@
 import { overlaps, tileRange, type Rect } from "./aabb";
+import { PLAYER_H } from "./params";
 
 export const TILE = 8;
 export const COLS = 40;
@@ -13,14 +14,17 @@ export const SPIKE = 2;
 export type Checkpoint = { id: number; x: number; y: number; w: number; h: number };
 export type Flag = Rect;
 
-/** Surface of early path (y-down). Start S stands on y=2 ground. */
-const GROUND_TOP = 2;
-/** Lower terrace for the coyote gap and landing. */
-const LOW_TOP = 4;
-/** Goal cliff near the floor so the pit is a downhill jump. */
-const GOAL_TOP = 14;
-/** Spikes sit on the pit floor only — the air above x28–33 stays clear. */
-const SPIKE_TOP = 16;
+/** Start S ≈ (x2, y3). y-down tile rows. */
+export const GROUND_TOP = 3;
+/** After the 1-tile jump, same terrace. */
+export const MID_TOP = 3;
+/** Landing after the 2-tile coyote gap. */
+export const LAND_TOP = 4;
+/** Safe ledge before the must-dash void; CP2 ≈ x29. */
+export const SAFE_TOP = 8;
+/** Goal surface. 6 tiles above SAFE so a pure jump cannot land. */
+export const GOAL_TOP = 2;
+export const SPIKE_TOP = 16;
 
 export function createLevel() {
   const tiles = new Uint8Array(COLS * ROWS);
@@ -33,27 +37,31 @@ export function createLevel() {
     }
   };
 
-  // Flat ground x0–11 at height y2 (first three segments are spike-free).
-  fill(0, 11, GROUND_TOP, GROUND_TOP + 1, SOLID);
-  // 1-tile gap x12–13 (void)
-  // Low platform x14–19
-  fill(14, 19, LOW_TOP, LOW_TOP + 1, SOLID);
-  // 2-tile coyote gap x20–23 (void)
-  // Landing platform x24–27
-  fill(24, 27, LOW_TOP, LOW_TOP + 1, SOLID);
-  // Spike pit x28–33 (hazard on the floor of the hole)
-  fill(28, 33, SPIKE_TOP, ROWS - 1, SPIKE);
-  // Goal platform x34–39, thick so you cannot slip under the lip
-  fill(34, 39, GOAL_TOP, ROWS - 1, SOLID);
+  // x0–8 run ground
+  fill(0, 8, GROUND_TOP, GROUND_TOP + 1, SOLID);
+  // x9–10 1-tile jump gap (void)
+  // x11–15 platform
+  fill(11, 15, MID_TOP, MID_TOP + 1, SOLID);
+  // x16–18 2-tile coyote gap (void)
+  // x19–22 landing
+  fill(19, 22, LAND_TOP, LAND_TOP + 1, SOLID);
+  // x23–27 spike pit (jump-buffer lesson)
+  fill(23, 27, SPIKE_TOP, ROWS - 1, SPIKE);
+  // x28–30 safe platform
+  fill(28, 30, SAFE_TOP, SAFE_TOP + 1, SOLID);
+  // x31–35 5-tile must-dash void (no spikes; 4 tiles is jumpable at same height)
+  // x36–39 goal + flag G
+  fill(36, 39, GOAL_TOP, ROWS - 1, SOLID);
 
   const spawn = {
     x: 2 * TILE,
-    y: GROUND_TOP * TILE - 10,
+    y: GROUND_TOP * TILE - PLAYER_H,
   };
 
   const checkpoints: Checkpoint[] = [
-    { id: 0, x: spawn.x, y: spawn.y, w: 8, h: 10 },
-    { id: 1, x: 15 * TILE + 2, y: LOW_TOP * TILE - 10, w: 4, h: 10 },
+    { id: 0, x: spawn.x, y: spawn.y, w: 8, h: PLAYER_H },
+    { id: 1, x: 20 * TILE, y: LAND_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
+    { id: 2, x: 29 * TILE, y: SAFE_TOP * TILE - PLAYER_H, w: 8, h: PLAYER_H },
   ];
 
   const flag: Flag = {
@@ -84,7 +92,7 @@ export function createLevel() {
     spawn,
     checkpoints,
     flag,
-    goalLedge: { x: 34 * TILE, y: GOAL_TOP * TILE, w: 6 * TILE, h: TILE },
+    goalLedge: { x: 36 * TILE, y: GOAL_TOP * TILE, w: 4 * TILE, h: TILE },
     at,
     isSolid(tx: number, ty: number) {
       return at(tx, ty) === SOLID;
@@ -96,15 +104,17 @@ export function createLevel() {
       return overlaps(rect, flag);
     },
     touchingCheckpoint(rect: Rect): Checkpoint | null {
+      let found: Checkpoint | null = null;
       for (const cp of checkpoints) {
         if (cp.id === 0) continue;
-        if (overlaps(rect, cp)) return cp;
+        if (overlaps(rect, cp) && (!found || cp.id > found.id)) found = cp;
       }
-      return null;
+      return found;
     },
     respawnAt(id: number) {
-      if (id <= 0) return { x: spawn.x, y: spawn.y };
-      return { x: 15 * TILE, y: LOW_TOP * TILE - 10 };
+      const cp = checkpoints.find((c) => c.id === id);
+      if (!cp) return { x: spawn.x, y: spawn.y };
+      return { x: cp.x, y: cp.y };
     },
   };
 }

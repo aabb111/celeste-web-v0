@@ -11,6 +11,8 @@ const C = {
   player: "#8fd4e8",
   playerDark: "#3d7f96",
   hair: "#e25b4c",
+  hairDash: "#5aa6e8",
+  hairFlash: "#e8eef6",
   cpOff: "#6d7cff",
   cpOn: "#7dffb0",
   flagPole: "#d8c48a",
@@ -49,9 +51,9 @@ export function render(
 function drawLabels(ctx: CanvasRenderingContext2D, level: Level) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("S", 16, 14);
-  ctx.fillText("hold", 214, 28);
+  ctx.fillText("S", 16, 22);
   ctx.fillText("G", level.flag.x, level.flag.y - 2);
+  ctx.fillText("dash", 252, 52);
 }
 
 function drawTiles(ctx: CanvasRenderingContext2D, level: Level) {
@@ -76,18 +78,19 @@ function drawTiles(ctx: CanvasRenderingContext2D, level: Level) {
 }
 
 function drawCheckpoint(ctx: CanvasRenderingContext2D, level: Level, active: number) {
-  const cp = level.checkpoints[1];
-  if (!cp) return;
-  const cx = cp.x + cp.w / 2;
-  const mid = cp.y + cp.h * 0.45;
-  ctx.fillStyle = active >= 1 ? C.cpOn : C.cpOff;
-  ctx.beginPath();
-  ctx.moveTo(cx, cp.y);
-  ctx.lineTo(cp.x + cp.w, mid);
-  ctx.lineTo(cx, cp.y + cp.h);
-  ctx.lineTo(cp.x, mid);
-  ctx.closePath();
-  ctx.fill();
+  for (const cp of level.checkpoints) {
+    if (cp.id === 0) continue;
+    const cx = cp.x + cp.w / 2;
+    const mid = cp.y + cp.h * 0.45;
+    ctx.fillStyle = active >= cp.id ? C.cpOn : C.cpOff;
+    ctx.beginPath();
+    ctx.moveTo(cx, cp.y);
+    ctx.lineTo(cp.x + cp.w, mid);
+    ctx.lineTo(cx, cp.y + cp.h);
+    ctx.lineTo(cp.x, mid);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function drawFlag(ctx: CanvasRenderingContext2D, level: Level, won: boolean) {
@@ -117,14 +120,19 @@ function drawPlayer(
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = C.player;
   ctx.fillRect(x + 1, y + 1, Math.max(1, w - 2), Math.max(1, h - 3));
-  ctx.fillStyle = C.hair;
+  ctx.fillStyle =
+    player.dashFreeze > 0 || player.dashing
+      ? C.hairFlash
+      : player.dashes > 0
+        ? C.hairDash
+        : C.hair;
   ctx.fillRect(player.facing === 1 ? x + w - 4 : x, y - 2, 4, 3);
 }
 
 function drawHud(ctx: CanvasRenderingContext2D, status: string, won: boolean) {
   ctx.fillStyle = C.muted;
   ctx.font = "5px monospace";
-  ctx.fillText("LEFT / RIGHT  move    SPACE / Z  jump    DOWN  fast-fall    R  reset", 4, ROOM_H - 8);
+  ctx.fillText("LEFT / RIGHT  move    SPACE / Z  jump    X  dash    DOWN  fast-fall    R  reset", 4, ROOM_H - 8);
   ctx.fillStyle = won ? C.cpOn : C.ink;
   ctx.fillText(status, 4, ROOM_H - 16);
 }
