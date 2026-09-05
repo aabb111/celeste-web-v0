@@ -14,8 +14,8 @@ if (!gfx) throw new Error("Canvas 2D unavailable");
 const ctx: CanvasRenderingContext2D = gfx;
 
 const input = createInput();
-mountTouchControls(input.virtual, canvas);
-bindViewportFit(canvas, ctx);
+const touch = mountTouchControls(input.virtual, canvas);
+bindViewportFit(canvas, ctx, touch.syncLayout);
 const game = createGame();
 let accumulator = 0;
 let last = performance.now();
