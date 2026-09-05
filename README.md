@@ -13,7 +13,7 @@ Open the printed local URL (default `http://127.0.0.1:43173`).
 
 Controls: **Left / Right** to run, **Space / C / Up** to jump, **Z / V / Left Shift** to grab (hold, no buffer), **X** to dash (8-way), **Down / S** to fast-fall or climb down, **Up / W** to climb up while grabbing, **R** to reset the run.
 
-On a narrow or touch viewport (portrait **and** landscape): pads overlay the canvas corners — no extra bottom chrome. Left cluster is **Grab** above **← →** (no ↑ key; holding Grab climbs up). Bottom-right is **Dash | Jump** with **Down** only under Jump. **R** is a small low-contrast control at the top-right, away from the action cluster. Pads are multi-touch with pointer capture (slide off still tracks until lift). Desktop keyboard is unchanged besides **Z** moving from jump to grab.
+On a narrow or touch viewport (portrait **and** landscape): pads overlay the **canvas** corners — measured from the game frame, not the screen letterbox. Portrait bottom-aligns the contain-fit view so the control zone sits on the frame. Left cluster is **Grab** above **← →** (no ↑). Right cluster is **Dash | Jump**, with **Up** directly above Jump and **Down** under Jump. Climb = Grab + Up / Down. **R** is a small low-contrast control at the canvas top-right. Pads are multi-touch with pointer capture (slide off still tracks until lift). Desktop keyboard is unchanged besides **Z** moving from jump to grab.
 
 ## Rooms
 

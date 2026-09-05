@@ -1,4 +1,5 @@
 import type { PadButton, VirtualPad } from "./input";
+import { applyCanvasFrameVars } from "./touch-layout";
 import "./touch-controls.css";
 
 /** Show on phones/tablets in any orientation — never hide the pad in landscape. */
@@ -17,6 +18,13 @@ export function mountTouchControls(virtual: VirtualPad, canvas: HTMLCanvasElemen
   media.addEventListener("change", syncVis);
   syncVis();
 
+  const syncLayout = () => applyCanvasFrameVars(hud, canvas);
+  syncLayout();
+  window.addEventListener("resize", syncLayout);
+  window.addEventListener("orientationchange", syncLayout);
+  window.visualViewport?.addEventListener("resize", syncLayout);
+  window.visualViewport?.addEventListener("scroll", syncLayout);
+
   const pointers = new Map<number, PadButton>();
   for (const btn of hud.querySelectorAll<HTMLElement>("[data-action]")) {
     bindPadButton(btn, btn.dataset.action as PadButton, virtual, pointers);
@@ -34,6 +42,8 @@ export function mountTouchControls(virtual: VirtualPad, canvas: HTMLCanvasElemen
   canvas.addEventListener("pointerdown", (e) => e.preventDefault());
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   hud.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  return { syncLayout };
 }
 
 function createHud(): HTMLDivElement {
@@ -51,6 +61,7 @@ function createHud(): HTMLDivElement {
     </div>
     <div class="touch-pad touch-pad-actions">
       <button type="button" class="touch-btn touch-btn-dash" data-action="dash" tabindex="-1" aria-label="Dash">Dash</button>
+      <button type="button" class="touch-btn touch-btn-up" data-action="up" tabindex="-1" aria-label="Up">Up</button>
       <button type="button" class="touch-btn touch-btn-jump" data-action="jump" tabindex="-1" aria-label="Jump">Jump</button>
       <button type="button" class="touch-btn touch-btn-down" data-action="down" tabindex="-1" aria-label="Down">Down</button>
     </div>
