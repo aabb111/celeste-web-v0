@@ -1,6 +1,7 @@
 import { createInput, type InputState } from "./input";
 import { TICK } from "./params";
-import { createGame, paint, tick } from "./game";
+import { createGame, tick } from "./game";
+import { paintGame } from "./paint";
 import { bindViewportFit } from "./viewport";
 import { mountTouchControls } from "./touch-controls";
 import "./style.css";
@@ -49,7 +50,7 @@ function frame(now: number) {
     accumulator -= TICK;
   }
 
-  paint(ctx, game);
+  paintGame(ctx, game);
   requestAnimationFrame(frame);
 }
 
