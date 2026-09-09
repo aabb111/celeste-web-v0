@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Slice 比熊修正版 source crops into transparent in-game frames.
+"""Slice idle/jump/dash from the 比熊修正版 sheet. No redraw, no palette remap.
 
-Primary art: scripts/ref/bichon-{idle,jump,dash}-src.png
-(cropped from the 比熊修正版 sheet — curly powder-puff, short snout).
+Primary art: scripts/ref/bichon-revised-sheet.png
+Crops are written to scripts/ref/bichon-{idle,jump,dash}-src.png
 Idle feet sit on a shared ground row so the 8x10 collider stays put.
 """
 
@@ -13,29 +13,26 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = ROOT / "scripts" / "ref"
+REF_DIR = ROOT / "scripts" / "ref"
 OUT_DIR = ROOT / "src" / "assets"
+SHEET = REF_DIR / "bichon-revised-sheet.png"
 
 FRAME_W = 72
 FRAME_H = 36
 TARGET_H = 32
 FOOT_Y = 33
 
-PAL = [
-    (255, 255, 255, 255),
-    (248, 248, 246, 255),
-    (236, 234, 228, 255),
-    (220, 218, 210, 255),
-    (198, 196, 188, 255),
-    (176, 172, 164, 255),
-    (148, 144, 136, 255),
-    (110, 106, 100, 255),
-    (28, 24, 22, 255),
-    (12, 10, 10, 255),
-    (168, 118, 70, 255),
-    (120, 78, 42, 255),
-    (86, 54, 30, 255),
-]
+# Tight boxes around the three gameplay poses on 比熊修正版 (1280x720).
+CROPS = {
+    "idle": (582, 66, 794, 236),
+    "jump": (590, 388, 754, 558),
+    "dash": (870, 390, 1204, 558),
+}
+
+
+def is_navy(c: tuple[int, int, int, int]) -> bool:
+    r, g, b, _a = c
+    return r < 55 and g < 60 and b < 95
 
 
 def is_dust(c: tuple[int, int, int, int]) -> bool:
@@ -43,31 +40,53 @@ def is_dust(c: tuple[int, int, int, int]) -> bool:
     return a > 40 and r > 70 and r > g + 20 and r > b + 25 and g < 160
 
 
-def nearest_pal(c: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
-    r, g, b, a = c
-    if a < 40:
-        return (0, 0, 0, 0)
-    if a < 160 or is_dust(c):
-        best = min(PAL[10:], key=lambda p: (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2)
-        return (*best[:3], 220 if a >= 80 else 160)
-    best = min(PAL, key=lambda p: (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2)
-    return best
-
-
-def quantize(im: Image.Image) -> Image.Image:
-    out = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    sp, dp = im.load(), out.load()
-    assert sp is not None and dp is not None
-    for y in range(im.size[1]):
-        for x in range(im.size[0]):
-            dp[x, y] = nearest_pal(sp[x, y])
+def punch_navy(im: Image.Image) -> Image.Image:
+    out = im.convert("RGBA")
+    px = out.load()
+    assert px is not None
+    w, h = out.size
+    for y in range(h):
+        for x in range(w):
+            if is_navy(px[x, y]):
+                px[x, y] = (0, 0, 0, 0)
     return out
+
+
+def trim(im: Image.Image) -> Image.Image:
+    box = im.getbbox()
+    if box is None:
+        return im
+    return im.crop(box)
+
+
+def harden_alpha(im: Image.Image) -> Image.Image:
+    """Keep the sheet's colors; only drop faint navy fringe."""
+    out = im.copy()
+    px = out.load()
+    assert px is not None
+    w, h = out.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a < 48:
+                px[x, y] = (0, 0, 0, 0)
+            elif a < 200 and is_navy((r, g, b, a)):
+                px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def slice_pose(sheet: Image.Image, name: str) -> Image.Image:
+    crop = punch_navy(sheet.crop(CROPS[name]))
+    dog = harden_alpha(trim(crop))
+    dest = REF_DIR / f"bichon-{name}-src.png"
+    dog.save(dest, "PNG")
+    return dog
 
 
 def downscale(im: Image.Image) -> Image.Image:
     scale = TARGET_H / im.size[1]
     tw = max(1, round(im.size[0] * scale))
-    return im.resize((tw, TARGET_H), Image.BOX)
+    return harden_alpha(im.resize((tw, TARGET_H), Image.BOX))
 
 
 def body_box(im: Image.Image) -> tuple[int, int, int, int]:
@@ -117,13 +136,15 @@ def pack(im: Image.Image) -> Image.Image:
 
 
 def main() -> None:
+    if not SHEET.exists():
+        raise SystemExit(f"missing primary sheet {SHEET}")
+    sheet = Image.open(SHEET).convert("RGBA")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for name in ("idle", "jump", "dash"):
-        src = Image.open(SRC_DIR / f"bichon-{name}-src.png").convert("RGBA")
-        frame = pack(quantize(downscale(src)))
+        frame = pack(downscale(slice_pose(sheet, name)))
         dest = OUT_DIR / f"bichon-{name}.png"
         frame.save(dest, "PNG")
-        print(f"wrote {dest} {frame.size} footY={FOOT_Y}")
+        print(f"wrote {dest} {frame.size} from 比熊修正版 footY={FOOT_Y}")
 
 
 if __name__ == "__main__":
