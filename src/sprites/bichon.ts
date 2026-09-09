@@ -3,10 +3,10 @@ import jumpUrl from "../assets/bichon-jump.png";
 import dashUrl from "../assets/bichon-dash.png";
 import { PLAYER_H, PLAYER_W, type Player } from "../player";
 
-export const BICHON_W = 24;
-export const BICHON_H = 20;
+export const BICHON_W = 72;
+export const BICHON_H = 36;
 /** Idle feet sit on this row; jump/dash keep the same body pivot. */
-export const BICHON_FOOT_Y = 17;
+export const BICHON_FOOT_Y = 33;
 
 export type BichonPose = "idle" | "jump" | "dash";
 
