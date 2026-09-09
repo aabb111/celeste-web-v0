@@ -1,6 +1,7 @@
 import { overlaps, tileRange, type Rect } from "./aabb";
 import { room1 } from "./room1";
 import { room2 } from "./room2";
+import { room3 } from "./room3";
 import {
   COLS,
   EMPTY,
@@ -77,10 +78,39 @@ export {
   R2_WALL_X0,
   R2_WALL_X1,
 } from "./room2";
+export {
+  R3_CLIMB_C_TOP,
+  R3_CP1_X,
+  R3_CP2_X,
+  R3_CP3_X,
+  R3_CP4_X,
+  R3_CP5_X,
+  R3_CP6_X,
+  R3_CP7_X,
+  R3_DASH_A_X0,
+  R3_DASH_C_X0,
+  R3_DASH_F_X0,
+  R3_DROP_F_X,
+  R3_ENTRY_TOP,
+  R3_FINALE_TOP,
+  R3_FLOOR_TOP,
+  R3_FOOT_A_X,
+  R3_FOOT_F_X,
+  R3_GOAL_TOP,
+  R3_GOAL_X0,
+  R3_LAND_A_TOP,
+  R3_SPIKE_B_APPROACH,
+  R3_SPIKE_B_X0,
+  R3_SPIKE_PB_X0,
+  R3_TOP_C_X0,
+  R3_WALL_C_X,
+  R3_WALL_F_X,
+} from "./room3";
 
 const BLUEPRINTS: Record<RoomId, RoomBlueprint> = {
   room1,
   room2,
+  room3,
 };
 
 export function createLevel(roomId: RoomId = "room1") {

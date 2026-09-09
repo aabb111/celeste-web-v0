@@ -1,6 +1,6 @@
 # Ledge
 
-Two-screen Celeste-like 2D platformer (web only). Vite + TypeScript + Canvas 2D, custom AABB physics, fixed 60Hz timestep.
+Three-screen Celeste-like 2D platformer (web only). Vite + TypeScript + Canvas 2D, custom AABB physics, fixed 60Hz timestep.
 
 ## Run
 
@@ -17,7 +17,7 @@ On a narrow or touch viewport (portrait **and** landscape): pads overlay the **c
 
 ## Rooms
 
-Two 72×18-tile rooms. The camera shows a ~40-tile-wide window and follows horizontally with a small deadzone (no vertical scroll). Touching **G** cut-loads Room2 with no scroll between rooms.
+Three 72×18-tile rooms. The camera shows a ~40-tile-wide window and follows horizontally with a small deadzone (no vertical scroll). Touching **G** cut-loads Room2, and **G2** cut-loads Room3, with no scroll between rooms.
 
 ### Room1
 
@@ -52,9 +52,23 @@ y-down tile rows (same as Room1). Brief heights (“y8 / y10”) are stand-on he
 - 5-tile must-dash up to a high ledge `x49–52` (y=4) — **CP4** ≈ `x50`
 - Drop to `x53–57` (y=12), short wall `x58–59`, then a 4-tile dash
 - Pre-goal ledge `x64–66` (y=10) — **CP5** ≈ `x65`
-- Another dash gap to goal `x70–71` with flag **G2** at y=7 (stand-on y10)
+- Another dash gap to goal `x70–71` with flag **G2** at y=7 (stand-on y10) — touching **G2** instant-loads Room3 at **S3**
 
-Death respawns at the last Room2 checkpoint (never back to Room1). Die on spikes or by falling off the bottom. Respawn clears velocity, refills dash, and restores stamina. Input stays locked through the death effect (~0.54s) and intro respawn (0.6s).
+### Room3
+
+y-down tile rows (same as Room1/2). Brief heights (“y10 / y2 / y9”) are stand-on heights from the bottom: row = 17 − h. Checkpoints **CP0–CP7**.
+
+- Entry **S3** / **CP0** on a high platform `x0–2` at y10 (row 7)
+- Drop `x3–6` to the default floor (y2 / row 15) — **CP1** ≈ `x7`
+- Combo A `x9–19`: 2-tile coyote + 2-tile footing + 5-tile must-dash up — **CP2** ≈ `x20` (row 11)
+- Practice A `x22–27`: 2-tile coyote + 2-tile footing + short dash — **CP3** ≈ `x28`
+- Combo B spike pit width 5 (`x31–35`, buffer jump + air dash) — **CP4** ≈ `x37`
+- Practice B spike width 4 (`x39–42`) — **CP5** ≈ `x43`
+- Combo C: climb ~7 tiles to y9, 2-tile top, 5-tile dash — **CP6** ≈ `x53`
+- Finale: drop to floor, coyote2, footing, climb 5, 4-tile dash — **CP7** ≈ `x66`
+- Goal `x68–71` with flag **G3** (~y8) and an exit door
+
+Death respawns at the last checkpoint in the current room (never a previous room). Die on spikes or by falling off the bottom. Respawn clears velocity, refills dash, and restores stamina. Input stays locked through the death effect (~0.54s) and intro respawn (0.6s).
 
 Feel values live in `src/params.ts` (Celeste-style table: MaxRun 90, JumpSpeed -105, DashSpeed 240, ClimbMaxStamina 110, ClimbTired 20, ClimbUpCost ≈45.45/s, ClimbStillCost 10/s, ClimbJumpCost 27.5, ClimbUpSpeed -45, WallJumpHSpeed 130, WallSlideStartMax 20). Headless checks: `npm test`.
 
@@ -73,4 +87,5 @@ Verified against the acceptance criteria:
 | Wall slide | Holding into a wall while falling, without grab, eases fall toward WallSlideStartMax 20 over 1.2s. |
 | Reach G | Teach-then-practice gaps, 6-tile climb + short wall, then jump + up-right dash the last 4-tile void — jump alone cannot clear it. |
 | Room2 | Touching Room1 G cut-loads Room2. Double coyote, two spike pits, 8-tile climb, 5-tile must-dash, wall+dash combo, then dash to G2. Death stays in Room2. |
+| Room3 | Touching Room2 G2 cut-loads Room3. Combo coyote+dash, spike+dash, 7-tile climb + 5-tile dash, then finale climb+dash to G3. Death stays in Room3. |
 | Camera | 72-tile rooms, 40-tile viewport, horizontal follow with a 20px deadzone. Room cuts do not scroll. |

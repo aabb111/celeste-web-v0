@@ -102,7 +102,7 @@ export function tick(game: Game, input: InputState) {
       return;
     }
     game.mode = "won";
-    game.status = "Flag G2 — room clear.";
+    game.status = "Flag G3 — room clear.";
   }
 
   followCamera(game.camera, game.player.x);

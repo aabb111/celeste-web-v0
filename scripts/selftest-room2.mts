@@ -187,7 +187,7 @@ assert("room2 is 72 tiles wide", COLS === 72 && VIEW_COLS === 40);
 assert("room2 spawn is S2 ≈ (x2, y9)", r2.spawn.x === 2 * TILE && r2.roomId === "room2");
 assert("room2 has CP0–CP5", r2.checkpoints.length === 6);
 assert("room2 CP0 is spawn", r2.checkpoints[0]!.x === r2.spawn.x && r2.checkpoints[0]!.y === r2.spawn.y);
-assert("room2 does not exit to another room", r2.nextRoom === null);
+assert("room2 exits to Room3", r2.nextRoom === "room3");
 assert("room2 has an entry door", r2.door !== null && r2.door.x === 0);
 
 const drop = settle(2, R2_ENTRY_TOP);
@@ -321,5 +321,14 @@ fall.player.y = 200;
 tick(fall, hold(0, false));
 for (let i = 0; i < deathFrames; i++) tick(fall, hold(0, false));
 assert("Room2 CP0 death stays at S2", Math.abs(fall.player.x - 2 * TILE) < 0.01 && fall.roomId === "room2");
+
+const toRoom3 = createGame();
+loadRoom(toRoom3, "room2");
+toRoom3.player.x = toRoom3.level.flag.x;
+toRoom3.player.y = toRoom3.level.flag.y;
+tick(toRoom3, hold(0, false));
+assert("Room2 G2 cut-loads Room3", toRoom3.roomId === "room3" && toRoom3.mode === "play");
+assert("Room3 spawn is used after the cut", Math.abs(toRoom3.player.x - 2 * TILE) < 0.01);
+assert("Room3 checkpoint resets on entry", toRoom3.activeCheckpoint === 0);
 
 console.log("room2 self-tests passed");

@@ -14,7 +14,7 @@ export const EMPTY = 0;
 export const SOLID = 1;
 export const SPIKE = 2;
 
-export type RoomId = "room1" | "room2";
+export type RoomId = "room1" | "room2" | "room3";
 
 export type Checkpoint = { id: number; x: number; y: number; w: number; h: number };
 export type Flag = { x: number; y: number; w: number; h: number };

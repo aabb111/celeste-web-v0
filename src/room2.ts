@@ -61,7 +61,7 @@ export const R2_GOAL_X0 = 69;
 
 export const room2: RoomBlueprint = {
   id: "room2",
-  next: null,
+  next: "room3",
   status: "Room 2 — coyote, spikes, climb, dash to G2.",
   spawn: tilePos(2, R2_ENTRY_TOP),
   checkpoints: [
