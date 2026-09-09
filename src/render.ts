@@ -2,7 +2,8 @@ import type { Camera } from "./camera";
 import { isTired } from "./climb";
 import { COLS, ROWS, SPIKE, SOLID, TILE, VIEW_H, VIEW_W, type Level } from "./level";
 import { P } from "./params";
-import { PLAYER_H, PLAYER_W, type Player } from "./player";
+import { PLAYER_W, type Player } from "./player";
+import { bichonSpriteTop, drawBichon } from "./sprites/bichon";
 
 const C = {
   sky: "#141a26",
@@ -11,11 +12,8 @@ const C = {
   solidTop: "#6d8aa8",
   spike: "#c4454d",
   spikeDark: "#8d2d38",
-  player: "#8fd4e8",
-  playerDark: "#3d7f96",
   hair: "#e25b4c",
   hairDash: "#5aa6e8",
-  hairFlash: "#e8eef6",
   cpOff: "#6d7cff",
   cpOn: "#7dffb0",
   flagPole: "#d8c48a",
@@ -131,27 +129,12 @@ function drawPlayer(
 ) {
   if (dead && flash % 2 === 0) return;
   const squash = intro ? 1 : player.landSquash;
-  const sx = 1 + 0.35 * squash;
-  const sy = 1 - 0.35 * squash;
-  const w = PLAYER_W * sx;
-  const h = PLAYER_H * sy;
-  const x = player.x + (PLAYER_W - w) / 2;
-  const y = player.y + PLAYER_H - h;
-  ctx.fillStyle = C.playerDark;
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = C.player;
-  ctx.fillRect(x + 1, y + 1, Math.max(1, w - 2), Math.max(1, h - 3));
-  ctx.fillStyle =
-    player.dashFreeze > 0 || player.dashing
-      ? C.hairFlash
-      : isTired(player) || player.dashes <= 0
-        ? C.hair
-        : C.hairDash;
-  ctx.fillRect(player.facing === 1 ? x + w - 4 : x, y - 2, 4, 3);
+  drawBichon(ctx, player, squash);
   if (player.climbing || player.stamina < P.climbMaxStamina) {
     const ratio = Math.max(0, player.stamina / P.climbMaxStamina);
+    const top = bichonSpriteTop(player, squash);
     ctx.fillStyle = isTired(player) ? C.hair : C.hairDash;
-    ctx.fillRect(x, y - 4, Math.max(1, w * ratio), 1);
+    ctx.fillRect(player.x, top - 2, Math.max(1, PLAYER_W * ratio), 1);
   }
 }
 
