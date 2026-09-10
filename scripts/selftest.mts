@@ -692,14 +692,19 @@ assert(
   `latch=${latched} climb=${probe.climbing} y=${probe.y}`,
 );
 
-const listeners: Record<string, (e: { code: string; preventDefault(): void }) => void> = {};
+type TestKey = { code: string; key?: string; repeat?: boolean; preventDefault(): void };
+const listeners: Record<string, (e: TestKey) => void> = {};
 const input = createInput({
-  addEventListener(type: string, fn: (e: { code: string; preventDefault(): void }) => void) {
+  addEventListener(type: string, fn: (e: TestKey) => void) {
     listeners[type] = fn;
   },
 } as unknown as Window);
-const press = (code: string) => listeners.keydown?.({ code, preventDefault() {} });
-const release = (code: string) => listeners.keyup?.({ code, preventDefault() {} });
+const press = (code: string, key?: string) => listeners.keydown?.({ code, key, preventDefault() {} });
+const release = (code: string, key?: string) => listeners.keyup?.({ code, key, preventDefault() {} });
+const tap = (code: string, key?: string) => {
+  press(code, key);
+  release(code, key);
+};
 press("ArrowUp");
 const upOnly = input.poll();
 assert(
@@ -746,6 +751,55 @@ assert(
   "keyboard Z+Up climbs (vy→-45)",
   kbClimb.climbing && kbClimb.y < kbY0 - 10 && kbClimb.vy <= P.climbUpSpeed + 8 && kbClimb.vy >= P.climbUpSpeed - 1,
   `climb=${kbClimb.climbing} y0=${kbY0} y=${kbClimb.y} vy=${kbClimb.vy}`,
+);
+release("KeyZ");
+release("ArrowUp");
+input.poll();
+
+tap("Space");
+const shortSpace = input.poll();
+assert(
+  "short-tap Space latches jumpPressed",
+  shortSpace.jumpPressed && shortSpace.y === 0 && shortSpace.moveY === 0,
+  `jump=${shortSpace.jumpPressed} y=${shortSpace.y} moveY=${shortSpace.moveY}`,
+);
+const groundedSpace = settleOnSpawn();
+const groundedSpaceY = groundedSpace.y;
+integratePlayer(groundedSpace, shortSpace, createLevel(), TICK);
+assert(
+  "grounded short-tap Space jumps",
+  !groundedSpace.onGround && groundedSpace.vy < 0 && groundedSpace.y < groundedSpaceY,
+  `gnd=${groundedSpace.onGround} vy=${groundedSpace.vy} y=${groundedSpace.y}`,
+);
+
+tap("KeyC");
+const shortC = input.poll();
+assert("short-tap C latches jumpPressed", shortC.jumpPressed && shortC.y === 0, `jump=${shortC.jumpPressed} y=${shortC.y}`);
+const groundedC = settleOnSpawn();
+integratePlayer(groundedC, shortC, createLevel(), TICK);
+assert("grounded short-tap C jumps", !groundedC.onGround && groundedC.vy < 0, `gnd=${groundedC.onGround} vy=${groundedC.vy}`);
+
+tap("", " ");
+const shortSpaceKey = input.poll();
+assert(
+  "short-tap Space via e.key latches jumpPressed",
+  shortSpaceKey.jumpPressed && shortSpaceKey.y === 0,
+  `jump=${shortSpaceKey.jumpPressed} y=${shortSpaceKey.y}`,
+);
+
+tap("ArrowUp");
+const shortUp = input.poll();
+assert("short-tap Up does not jump", !shortUp.jumpPressed && !shortUp.jumpHeld, `jump=${shortUp.jumpPressed}`);
+tap("KeyW");
+const shortW = input.poll();
+assert("short-tap W does not jump", !shortW.jumpPressed && !shortW.jumpHeld, `jump=${shortW.jumpPressed}`);
+
+input.virtual.jumpPulse = true;
+const padPulse = input.poll();
+assert(
+  "virtual Jump pulse still jumps",
+  padPulse.jumpPressed && padPulse.y === 0,
+  `jump=${padPulse.jumpPressed} y=${padPulse.y}`,
 );
 
 const cam = createGame();
