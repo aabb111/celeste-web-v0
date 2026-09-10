@@ -69,26 +69,6 @@ export function tryStartClimb(player: Player, input: InputState, level: Level): 
   return true;
 }
 
-export function climbJump(player: Player, input: InputState) {
-  if (!player.onGround) player.stamina -= P.climbJumpCost;
-  const boostDir = input.x !== 0 ? Math.sign(input.x) : 0;
-  player.vx += P.jumpHBoost * boostDir;
-  player.vy = P.jumpVelocity;
-  player.varJumpSpeed = player.vy;
-  player.jumpTimer = P.varJumpTime;
-  player.onGround = false;
-  player.coyote = 0;
-  player.buffer = 0;
-  player.wallSlideTimer = P.wallSlideTime;
-  if (input.x === 0) {
-    player.wallBoostDir = -player.facing;
-    player.wallBoostTimer = P.climbJumpBoostTime;
-  } else {
-    player.wallBoostTimer = 0;
-  }
-  endClimb(player);
-}
-
 export function wallJump(player: Player, dir: 1 | -1, lockMove: boolean) {
   player.vx = P.wallJumpHSpeed * dir;
   player.vy = P.jumpVelocity;
@@ -132,8 +112,7 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
 
   player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
   if (player.buffer > 0) {
-    if (input.x === -player.climbDir) wallJump(player, -player.climbDir as 1 | -1, input.x !== 0);
-    else climbJump(player, input);
+    wallJump(player, -player.climbDir as 1 | -1, true);
     return;
   }
 
@@ -231,18 +210,16 @@ export function tickWallSlide(player: Player, dt: number) {
   }
 }
 
-export function tryWallJump(player: Player, input: InputState, level: Level): boolean {
+export function tryWallJump(player: Player, level: Level): boolean {
   if (player.buffer <= 0 || player.onGround) return false;
   const right = againstWall(player, level, 1, P.wallJumpCheckDist);
   const left = againstWall(player, level, -1, P.wallJumpCheckDist);
   if (right) {
-    if (player.facing === 1 && input.grabHeld && player.stamina > 0) climbJump(player, input);
-    else wallJump(player, -1, input.x !== 0);
+    wallJump(player, -1, true);
     return true;
   }
   if (left) {
-    if (player.facing === -1 && input.grabHeld && player.stamina > 0) climbJump(player, input);
-    else wallJump(player, 1, input.x !== 0);
+    wallJump(player, 1, true);
     return true;
   }
   return false;

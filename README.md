@@ -80,9 +80,9 @@ Verified against the acceptance criteria:
 | --- | --- |
 | Run / jump / land | Ground accel to 90px/s, jump vy = -105, landing sets vy=0 with no bounce or stun. |
 | Coyote / buffer | Walk off an early gap and jump within 0.1s; press jump 0.08s before landing. |
-| Dash | One air dash at 240 for 0.15s after a 0.05s freeze; end speed 160 (×0.75 if upward); refill on land. Dash module unchanged. |
+| Dash | One air dash at 240 for 0.15s after a 0.05s freeze; 8-way aim with diagonals normalized (total speed still 240); end speed 160 (×0.75 if upward); refill on land. |
 | Grab / climb | Hold Z/V/Shift to grab. Climb up/down with stamina drain. Tired (stamina < 20) cannot start a grab; mid-climb may continue. |
-| ClimbJump / WallJump | Neutral jump on a wall costs 27.5 and uses JumpSpeed; jump away uses WallJumpHSpeed 130. |
+| WallJump | Jump while grabbing always kicks off the wall (WallJumpHSpeed 130, JumpSpeed -105, ForceTime 0.16s). No ClimbJump; wall jump does not spend ClimbJumpCost. |
 | Dash off wall | Dash still starts while climbing and cancels the grab. |
 | Wall slide | Holding into a wall while falling, without grab, eases fall toward WallSlideStartMax 20 over 1.2s. |
 | Reach G | Teach-then-practice gaps, 6-tile climb + short wall, then jump + up-right dash the last 4-tile void — jump alone cannot clear it. |
