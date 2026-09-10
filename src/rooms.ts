@@ -1,4 +1,4 @@
-import { PLAYER_H } from "./params";
+import { P, PLAYER_H } from "./params";
 
 export const TILE = 8;
 /** World width in tiles. Camera shows a 40-tile window. */
@@ -21,6 +21,9 @@ export type Flag = { x: number; y: number; w: number; h: number };
 export type Label = { text: string; x: number; y: number };
 export type Fill = (x0: number, x1: number, y0: number, y1: number, type: number) => void;
 
+export type Crystal = { x: number; y: number; w: number; h: number; cooldown: number };
+export type Spring = { x: number; y: number; w: number; h: number };
+
 export type RoomBlueprint = {
   id: RoomId;
   next: RoomId | null;
@@ -31,6 +34,8 @@ export type RoomBlueprint = {
   goalLedge: { x: number; y: number; w: number; h: number };
   door: { x: number; y: number; w: number; h: number } | null;
   labels: Label[];
+  crystals: Crystal[];
+  springs: Spring[];
   paint: (fill: Fill) => void;
 };
 
@@ -44,4 +49,13 @@ export function tileCheckpoint(id: number, tx: number, top: number): Checkpoint 
 
 export function tileFlag(tx: number, top: number): Flag {
   return { x: tx * TILE + 1, y: top * TILE - 16, w: 6, h: 16 };
+}
+
+export function tileCrystal(tx: number, ty: number): Crystal {
+  return { x: tx * TILE, y: ty * TILE, w: P.crystalW, h: P.crystalH, cooldown: 0 };
+}
+
+/** Floor spring, bottom-aligned on the stand-on row `top`. */
+export function tileSpring(tx: number, top: number): Spring {
+  return { x: tx * TILE, y: top * TILE - P.springH, w: P.springW, h: P.springH };
 }

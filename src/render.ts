@@ -18,6 +18,10 @@ const C = {
   cpOn: "#7dffb0",
   flagPole: "#d8c48a",
   flag: "#e25b4c",
+  crystal: "#7de4ff",
+  crystalDim: "#3a6270",
+  spring: "#f0c14a",
+  springDark: "#c4892a",
   ink: "#e8eef6",
   muted: "#8b97a8",
 };
@@ -48,6 +52,8 @@ export function render(
   ctx.translate(-ox, -oy);
   drawTiles(ctx, level);
   drawDoor(ctx, level);
+  drawSprings(ctx, level);
+  drawCrystals(ctx, level);
   drawCheckpoint(ctx, level, opts.activeCheckpoint);
   drawFlag(ctx, level, opts.won);
   drawPlayer(ctx, player, opts.dead, opts.freezeFlash, opts.intro === true);
@@ -93,6 +99,35 @@ function drawTiles(ctx: CanvasRenderingContext2D, level: Level) {
         ctx.fillRect(x, y, TILE, TILE);
       }
     }
+  }
+}
+
+function drawSprings(ctx: CanvasRenderingContext2D, level: Level) {
+  for (const spring of level.springs) {
+    ctx.fillStyle = C.springDark;
+    ctx.fillRect(spring.x, spring.y + spring.h - 2, spring.w, 2);
+    ctx.fillStyle = C.spring;
+    ctx.fillRect(spring.x + 1, spring.y, spring.w - 2, spring.h - 1);
+  }
+}
+
+function drawCrystals(ctx: CanvasRenderingContext2D, level: Level) {
+  for (const crystal of level.crystals) {
+    if (crystal.cooldown > 0) {
+      ctx.fillStyle = C.crystalDim;
+      ctx.fillRect(crystal.x + 6, crystal.y + 6, 4, 4);
+      continue;
+    }
+    const cx = crystal.x + crystal.w / 2;
+    const cy = crystal.y + crystal.h / 2;
+    ctx.fillStyle = C.crystal;
+    ctx.beginPath();
+    ctx.moveTo(cx, crystal.y + 1);
+    ctx.lineTo(crystal.x + crystal.w - 1, cy);
+    ctx.lineTo(cx, crystal.y + crystal.h - 1);
+    ctx.lineTo(crystal.x + 1, cy);
+    ctx.closePath();
+    ctx.fill();
   }
 }
 

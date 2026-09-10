@@ -24,6 +24,7 @@ import {
   tickDashTimers,
 } from "./dash";
 import { P, PLAYER_H, PLAYER_W } from "./params";
+import { stepPickups } from "./pickups";
 import { ROOM_H, type Level } from "./level";
 import type { InputState } from "./input";
 
@@ -111,7 +112,10 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
 
   if (isDashFrozen(player)) {
     player.dashFreeze = Math.max(0, player.dashFreeze - dt);
-    if (isDashFrozen(player)) return;
+    if (isDashFrozen(player)) {
+      stepPickups(player, level, dt);
+      return;
+    }
   }
 
   if (player.dashLaunch) launchDash(player);
@@ -119,25 +123,33 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
     endClimb(player);
     startDash(player, input);
   }
-  if (isDashFrozen(player)) return;
+  if (isDashFrozen(player)) {
+    stepPickups(player, level, dt);
+    return;
+  }
 
   tickDashTimers(player, dt);
   tickWallSlide(player, dt);
 
   if (player.dashing) {
     stepDash(player, input, level, dt);
-    if (player.dashing) return;
+    if (player.dashing) {
+      stepPickups(player, level, dt);
+      return;
+    }
     applyJump(player, input, level, dt);
     tryStartClimb(player, input, level);
     tickForceMove(player, dt);
     refillDashIfGrounded(player);
     refillStamina(player);
+    stepPickups(player, level, dt);
     return;
   }
 
   if (player.climbing) {
     stepClimb(player, input, level, dt);
     refillDashIfGrounded(player);
+    stepPickups(player, level, dt);
     return;
   }
 
@@ -152,6 +164,7 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
   tickForceMove(player, dt);
   refillDashIfGrounded(player);
   refillStamina(player);
+  stepPickups(player, level, dt);
 }
 
 function stepDash(player: Player, input: InputState, level: Level, dt: number) {
@@ -194,7 +207,8 @@ function applyGravity(player: Player, input: InputState, level: Level, dt: numbe
 function applyVarJump(player: Player, input: InputState, dt: number) {
   if (player.jumpTimer <= 0) return;
   player.jumpTimer = Math.max(0, player.jumpTimer - dt);
-  if (input.jumpHeld) player.vy = Math.min(player.vy, player.varJumpSpeed);
+  const holdVar = input.jumpHeld || (player.autoJump && player.varJumpSpeed === P.springVelocity);
+  if (holdVar) player.vy = Math.min(player.vy, player.varJumpSpeed);
   else player.jumpTimer = 0;
 }
 

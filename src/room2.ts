@@ -7,6 +7,7 @@ import {
   tileCheckpoint,
   tileFlag,
   tilePos,
+  tileSpring,
   type Fill,
   type RoomBlueprint,
 } from "./rooms";
@@ -21,10 +22,9 @@ export const R2_ENTRY_TOP = 9;
 export const R2_LOW_TOP = 15;
 export const R2_WALL_TOP = 7;
 export const R2_DASH_LAND_TOP = 7;
-export const R2_COMBO_FLOOR_TOP = 12;
-export const R2_COMBO_WALL_TOP = 8;
-export const R2_PRE_GOAL_TOP = 10;
-export const R2_GOAL_TOP = 10;
+export const R2_SPRING_FLOOR_TOP = 12;
+export const R2_HIGH_TOP = 7;
+export const R2_GOAL_TOP = 7;
 export const R2_SPIKE_TOP = 16;
 
 export const R2_DROP_X1 = 9;
@@ -50,19 +50,20 @@ export const R2_CP3_X = 42;
 export const R2_DASH1_LAND_X0 = 48;
 export const R2_DASH1_LAND_X1 = 52;
 export const R2_CP4_X = 50;
-export const R2_COMBO_FLOOR_X0 = 53;
-export const R2_COMBO_FLOOR_X1 = 57;
-export const R2_COMBO_WALL_X0 = 58;
-export const R2_COMBO_WALL_X1 = 59;
-export const R2_PRE_GOAL_X0 = 64;
-export const R2_PRE_GOAL_X1 = 66;
-export const R2_CP5_X = 65;
-export const R2_GOAL_X0 = 69;
+export const R2_SPRING_FLOOR_X0 = 53;
+export const R2_SPRING_FLOOR_X1 = 55;
+export const R2_SPRING_X = 54;
+export const R2_HIGH_X0 = 58;
+export const R2_HIGH_X1 = 61;
+export const R2_CP5_X = 59;
+export const R2_DASH2_X0 = 62;
+export const R2_DASH2_X1 = 65;
+export const R2_GOAL_X0 = 66;
 
 export const room2: RoomBlueprint = {
   id: "room2",
   next: "room3",
-  status: "Room 2 — coyote, spikes, climb, dash to G2.",
+  status: "Room 2 — coyote, spikes, climb, spring, dash to G2.",
   spawn: tilePos(2, R2_ENTRY_TOP),
   checkpoints: [
     tileCheckpoint(0, 2, R2_ENTRY_TOP),
@@ -70,7 +71,7 @@ export const room2: RoomBlueprint = {
     tileCheckpoint(2, R2_CP2_X, R2_LOW_TOP),
     tileCheckpoint(3, R2_CP3_X, R2_WALL_TOP),
     tileCheckpoint(4, R2_CP4_X, R2_DASH_LAND_TOP),
-    tileCheckpoint(5, R2_CP5_X, R2_PRE_GOAL_TOP),
+    tileCheckpoint(5, R2_CP5_X, R2_HIGH_TOP),
   ],
   flag: tileFlag(70, R2_GOAL_TOP),
   goalLedge: { x: R2_GOAL_X0 * TILE, y: R2_GOAL_TOP * TILE, w: (COLS - R2_GOAL_X0) * TILE, h: TILE },
@@ -86,7 +87,10 @@ export const room2: RoomBlueprint = {
     { text: "G2", x: 70 * TILE + 1, y: R2_GOAL_TOP * TILE - 18 },
     { text: "climb", x: R2_WALL_X0 * TILE - 4, y: 88 },
     { text: "dash", x: R2_WALL_TOP_X1 * TILE + 8, y: 40 },
+    { text: "spring", x: R2_SPRING_X * TILE - 4, y: R2_SPRING_FLOOR_TOP * TILE - 10 },
   ],
+  crystals: [],
+  springs: [tileSpring(R2_SPRING_X, R2_SPRING_FLOOR_TOP)],
   paint(fill: Fill) {
     fill(0, 4, R2_ENTRY_TOP, R2_ENTRY_TOP + 1, SOLID);
     fill(5, R2_DROP_X1, R2_LOW_TOP, ROWS - 1, SOLID);
@@ -99,9 +103,8 @@ export const room2: RoomBlueprint = {
     fill(R2_WALL_X0, R2_WALL_X1, R2_WALL_TOP, ROWS - 1, SOLID);
     fill(R2_WALL_TOP_X0, R2_WALL_TOP_X1, R2_WALL_TOP, R2_WALL_TOP + 1, SOLID);
     fill(R2_DASH1_LAND_X0, R2_DASH1_LAND_X1, R2_DASH_LAND_TOP, R2_DASH_LAND_TOP + 1, SOLID);
-    fill(R2_COMBO_FLOOR_X0, R2_COMBO_FLOOR_X1, R2_COMBO_FLOOR_TOP, R2_COMBO_FLOOR_TOP + 1, SOLID);
-    fill(R2_COMBO_WALL_X0, R2_COMBO_WALL_X1, R2_COMBO_WALL_TOP, ROWS - 1, SOLID);
-    fill(R2_PRE_GOAL_X0, R2_PRE_GOAL_X1, R2_PRE_GOAL_TOP, R2_PRE_GOAL_TOP + 1, SOLID);
+    fill(R2_SPRING_FLOOR_X0, R2_SPRING_FLOOR_X1, R2_SPRING_FLOOR_TOP, R2_SPRING_FLOOR_TOP + 1, SOLID);
+    fill(R2_HIGH_X0, R2_HIGH_X1, R2_HIGH_TOP, R2_HIGH_TOP + 1, SOLID);
     fill(R2_GOAL_X0, COLS - 1, R2_GOAL_TOP, ROWS - 1, SOLID);
   },
 };

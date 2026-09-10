@@ -2,10 +2,6 @@ import { createGame, loadRoom, tick } from "../src/game.ts";
 import {
   COLS,
   createLevel,
-  R2_COMBO_FLOOR_TOP,
-  R2_COMBO_FLOOR_X0,
-  R2_COMBO_WALL_TOP,
-  R2_COMBO_WALL_X0,
   R2_CP1_X,
   R2_CP2_X,
   R2_CP3_X,
@@ -15,9 +11,11 @@ import {
   R2_DASH1_LAND_X0,
   R2_ENTRY_TOP,
   R2_GOAL_X0,
+  R2_HIGH_TOP,
+  R2_HIGH_X0,
   R2_LOW_TOP,
-  R2_PRE_GOAL_TOP,
-  R2_PRE_GOAL_X0,
+  R2_SPRING_FLOOR_TOP,
+  R2_SPRING_FLOOR_X0,
   R2_WALL_TOP,
   R2_WALL_X0,
   TILE,
@@ -157,34 +155,27 @@ function jumpDashTo(player: Player, level: ReturnType<typeof room2>, destX: numb
   return false;
 }
 
-function comboToPreGoal(player: Player, level: ReturnType<typeof room2>) {
+function springToHigh(player: Player, level: ReturnType<typeof room2>) {
   for (let i = 0; i < 80; i++) {
     const onFloor =
       player.onGround &&
-      player.x >= R2_COMBO_FLOOR_X0 * TILE &&
-      player.y >= R2_COMBO_FLOOR_TOP * TILE - PLAYER_H - 2;
+      player.x >= R2_SPRING_FLOOR_X0 * TILE &&
+      player.y >= R2_SPRING_FLOOR_TOP * TILE - PLAYER_H - 2;
     if (onFloor) break;
-    const ease = !player.onGround && player.x >= R2_COMBO_FLOOR_X0 * TILE - TILE;
+    const ease = !player.onGround && player.x >= R2_SPRING_FLOOR_X0 * TILE - TILE;
     integratePlayer(player, hold(ease ? 0 : 1, false), level, TICK);
     if (died(player, level)) return false;
   }
-  for (let i = 0; i < 40 && player.x < R2_COMBO_WALL_X0 * TILE - 8; i++) {
-    integratePlayer(player, hold(1, false), level, TICK);
-  }
-  for (let i = 0; i < 240; i++) {
-    const wall = R2_COMBO_WALL_X0 * TILE;
-    const atWall = player.x + PLAYER_W >= wall - 3;
-    const onTop =
+  for (let i = 0; i < 220; i++) {
+    const onHigh =
       player.onGround &&
-      player.y <= R2_COMBO_WALL_TOP * TILE - PLAYER_H + 2 &&
-      player.x >= wall - 4;
-    if (onTop) break;
-    const grab = atWall || player.climbing;
-    const moveX = player.climbing ? 0 : 1;
-    integratePlayer(player, hold(moveX, false, false, 0, false, grab, player.climbing ? -1 : 0), level, TICK);
+      player.x >= R2_HIGH_X0 * TILE &&
+      player.y <= R2_HIGH_TOP * TILE - PLAYER_H + 4;
+    if (onHigh) return true;
+    integratePlayer(player, hold(1, false), level, TICK);
     if (died(player, level)) return false;
   }
-  return jumpDashTo(player, level, R2_PRE_GOAL_X0 * TILE, true);
+  return player.onGround && player.x >= R2_HIGH_X0 * TILE && player.y <= R2_HIGH_TOP * TILE - PLAYER_H + 8;
 }
 
 const r2 = room2();
@@ -264,16 +255,24 @@ assert(
 
 const combo = settle(R2_CP4_X, R2_DASH_LAND_TOP);
 assert(
-  "wall + dash combo reaches the pre-goal ledge",
-  comboToPreGoal(combo.player, combo.level),
+  "spring bounce reaches the high CP5 ledge",
+  springToHigh(combo.player, combo.level),
   `x=${combo.player.x} y=${combo.player.y}`,
 );
 
-const finisher = settle(R2_CP5_X, R2_PRE_GOAL_TOP);
+const finisher = settle(R2_CP5_X, R2_HIGH_TOP);
 assert(
-  "final dash reaches G2",
+  "final must-dash reaches G2",
   jumpDashTo(finisher.player, finisher.level, R2_GOAL_X0 * TILE, true),
   `x=${finisher.player.x} y=${finisher.player.y}`,
+);
+
+const jumpOnlyGoal = settle(R2_CP5_X, R2_HIGH_TOP);
+assert(
+  "pure jump cannot clear Room2 end must-dash",
+  !jumpDashTo(jumpOnlyGoal.player, jumpOnlyGoal.level, R2_GOAL_X0 * TILE, false) &&
+    !jumpOnlyGoal.level.hitsFlag(playerRect(jumpOnlyGoal.player)),
+  `x=${jumpOnlyGoal.player.x} y=${jumpOnlyGoal.player.y}`,
 );
 
 const full = walkAndHopToCp1();
@@ -289,7 +288,7 @@ assert(
   jumpDashTo(full.player, full.level, R2_DASH1_LAND_X0 * TILE, true),
   `x=${full.player.x} y=${full.player.y}`,
 );
-assert("full Room2 run does the wall-dash combo", comboToPreGoal(full.player, full.level), `x=${full.player.x} y=${full.player.y}`);
+assert("full Room2 run springs to CP5", springToHigh(full.player, full.level), `x=${full.player.x} y=${full.player.y}`);
 assert("full Room2 run dashes to G2", jumpDashTo(full.player, full.level, R2_GOAL_X0 * TILE, true), `x=${full.player.x} y=${full.player.y}`);
 
 const transit = createGame();

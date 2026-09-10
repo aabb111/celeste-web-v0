@@ -10,21 +10,18 @@ import {
   R3_CP5_X,
   R3_CP6_X,
   R3_CP7_X,
-  R3_DROP_F_X,
   R3_ENTRY_TOP,
-  R3_FINALE_TOP,
   R3_FLOOR_TOP,
   R3_FOOT_A_X,
-  R3_FOOT_F_X,
-  R3_GOAL_TOP,
   R3_GOAL_X0,
   R3_LAND_A_TOP,
   R3_PRACTICE_A_TOP,
   R3_SPIKE_B_APPROACH,
   R3_SPIKE_B_X0,
+  R3_TEACH_TOP,
+  R3_TEACH_X0,
   R3_TOP_C_X0,
   R3_WALL_C_X,
-  R3_WALL_F_X,
   TILE,
   VIEW_COLS,
 } from "../src/level.ts";
@@ -246,31 +243,43 @@ function spikeDashTo(player: Player, level: ReturnType<typeof room3>, destX: num
   return jumpDashTo(player, level, destX, allowDash, -1);
 }
 
-function dropToFinaleFloor(player: Player, level: ReturnType<typeof room3>) {
-  for (let i = 0; i < 160; i++) {
-    const onFloor =
+function walkToTeach(player: Player, level: ReturnType<typeof room3>) {
+  for (let i = 0; i < 80; i++) {
+    const onTeach =
       player.onGround &&
-      player.y >= R3_FLOOR_TOP * TILE - PLAYER_H - 2 &&
-      player.x >= R3_DROP_F_X * TILE;
-    if (onFloor) return true;
-    const ease = !player.onGround;
-    integratePlayer(player, hold(ease ? 0 : 1, false), level, TICK);
+      player.x >= R3_TEACH_X0 * TILE &&
+      Math.abs(player.y - (R3_TEACH_TOP * TILE - PLAYER_H)) < 4;
+    if (onTeach) return true;
+    integratePlayer(player, hold(1, false), level, TICK);
+    if (died(player, level)) return false;
+  }
+  return player.onGround && player.x >= R3_TEACH_X0 * TILE;
+}
+
+function crystalGapTo(player: Player, level: ReturnType<typeof room3>, destX: number) {
+  if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
+  if (!walkToTeach(player, level)) return false;
+  for (let i = 0; i < 12; i++) {
+    integratePlayer(player, hold(1, false), level, TICK);
+    if (died(player, level)) return false;
+  }
+  integratePlayer(player, hold(1, true, true, 0), level, TICK);
+  let dashed = false;
+  for (let i = 0; i < 280; i++) {
+    const canSecond =
+      !player.dashing &&
+      player.dashFreeze <= 0 &&
+      player.dashCooldown <= 0 &&
+      player.dashes > 0 &&
+      !player.onGround &&
+      player.x < destX;
+    const pressDash = (!dashed && i === 6) || canSecond;
+    if (pressDash) dashed = true;
+    integratePlayer(player, hold(1, true, false, canSecond ? -1 : 0, pressDash), level, TICK);
+    if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
     if (died(player, level)) return false;
   }
   return false;
-}
-
-function finaleToGoal(player: Player, level: ReturnType<typeof room3>) {
-  if (!hopGapsUntil(player, level, R3_FOOT_F_X * TILE, (R3_FOOT_F_X + 1) * TILE, R3_FLOOR_TOP, "short")) return false;
-  if (!climbNamedWall(player, level, R3_WALL_F_X, R3_FINALE_TOP)) return false;
-  if (!jumpDashTo(player, level, R3_CP7_X * TILE, true, 0)) return false;
-  return jumpDashTo(player, level, R3_GOAL_X0 * TILE, false, -1) || hopGapsUntil(
-    player,
-    level,
-    R3_GOAL_X0 * TILE,
-    (R3_GOAL_X0 + 3) * TILE,
-    R3_GOAL_TOP,
-  );
 }
 
 const r3 = room3();
@@ -365,15 +374,27 @@ assert(
   `x=${dasher.player.x} y=${dasher.player.y}`,
 );
 
-const finaleDrop = settle(R3_CP6_X, R3_CLIMB_C_TOP);
+const teach = settle(R3_CP6_X, R3_CLIMB_C_TOP);
 assert(
-  "drops from CP6 onto the finale floor",
-  dropToFinaleFloor(finaleDrop.player, finaleDrop.level),
-  `x=${finaleDrop.player.x} y=${finaleDrop.player.y}`,
+  "walks from CP6 onto the crystal teach platform",
+  walkToTeach(teach.player, teach.level),
+  `x=${teach.player.x} y=${teach.player.y}`,
 );
 
-const finale = settle(R3_DROP_F_X, R3_FLOOR_TOP);
-assert("finale reaches G3", finaleToGoal(finale.player, finale.level), `x=${finale.player.x} y=${finale.player.y}`);
+const crystals = settle(R3_CP6_X, R3_CLIMB_C_TOP);
+assert(
+  "crystal 8-gap reaches CP7 / G3",
+  crystalGapTo(crystals.player, crystals.level, R3_CP7_X * TILE),
+  `x=${crystals.player.x} y=${crystals.player.y}`,
+);
+
+const jumpOnlyGap = settle(R3_TEACH_X0 + 1, R3_TEACH_TOP);
+assert(
+  "pure jump cannot clear Room3 crystal 8-gap",
+  !jumpDashTo(jumpOnlyGap.player, jumpOnlyGap.level, R3_CP7_X * TILE, false, 0) &&
+    !jumpOnlyGap.level.hitsFlag(playerRect(jumpOnlyGap.player)),
+  `x=${jumpOnlyGap.player.x} y=${jumpOnlyGap.player.y}`,
+);
 
 const full = settle(2, R3_ENTRY_TOP);
 for (let i = 0; i < 120; i++) {
@@ -401,8 +422,11 @@ assert(
   jumpDashTo(full.player, full.level, R3_CP6_X * TILE, true, 0),
   `x=${full.player.x}`,
 );
-assert("full Room3 run drops into the finale", dropToFinaleFloor(full.player, full.level), `x=${full.player.x}`);
-assert("full Room3 run clears the finale", finaleToGoal(full.player, full.level), `x=${full.player.x} y=${full.player.y}`);
+assert(
+  "full Room3 run clears the crystal 8-gap",
+  crystalGapTo(full.player, full.level, R3_GOAL_X0 * TILE),
+  `x=${full.player.x} y=${full.player.y}`,
+);
 
 const transit = createGame();
 assert("game starts in Room1", transit.roomId === "room1");

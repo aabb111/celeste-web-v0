@@ -77,6 +77,8 @@ export const room1: RoomBlueprint = {
     { text: "climb", x: WALL_X0 * TILE + 4, y: 100 },
     { text: "dash", x: DASH_LEDGE_X0 * TILE + 4, y: DASH_TOP * TILE - 10 },
   ],
+  crystals: [],
+  springs: [],
   paint(fill: Fill) {
     fill(0, START_X1, GROUND_TOP, GROUND_TOP + 1, SOLID);
     fill(JUMP1_X0, JUMP1_X1, MID_TOP, MID_TOP + 1, SOLID);

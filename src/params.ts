@@ -104,6 +104,16 @@ export const P = {
   wallSlideStartMax: 20,
   /** WallSlideTime */
   wallSlideTime: 1.2,
+  /** Dash-refill crystal hitbox */
+  crystalW: 16,
+  crystalH: 16,
+  /** Used crystal respawn delay (not one-use) */
+  crystalCooldown: 2.5,
+  /** Floor spring hitbox, bottom-aligned on the platform */
+  springW: 16,
+  springH: 6,
+  /** Spring launch speed (up is negative Y) */
+  springVelocity: -185,
 } as const;
 
 export const TICK = 1 / 60;

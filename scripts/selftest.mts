@@ -802,6 +802,58 @@ assert(
   `jump=${padPulse.jumpPressed} y=${padPulse.y}`,
 );
 
+const crystalLevel = createLevel("room3");
+const airCrystal = crystalLevel.crystals[1]!;
+const hungry = createPlayer(airCrystal.x + 4, airCrystal.y + 2);
+hungry.dashes = 0;
+hungry.stamina = 5;
+hungry.onGround = false;
+integratePlayer(hungry, hold(0, false), crystalLevel, TICK);
+assert("empty dash / tired eats crystal", hungry.dashes === 1 && hungry.stamina === P.climbMaxStamina, `dash=${hungry.dashes} stam=${hungry.stamina}`);
+assert("crystal goes on 2.5s cooldown", airCrystal.cooldown === P.crystalCooldown, `cd=${airCrystal.cooldown}`);
+
+const fullCrystalLevel = createLevel("room3");
+const fullCrystal = fullCrystalLevel.crystals[1]!;
+const stuffed = createPlayer(fullCrystal.x + 4, fullCrystal.y + 2);
+stuffed.dashes = 1;
+stuffed.stamina = P.climbMaxStamina;
+stuffed.onGround = false;
+integratePlayer(stuffed, hold(0, false), fullCrystalLevel, TICK);
+assert("full dash+stamina passes through crystal", fullCrystal.cooldown === 0, `cd=${fullCrystal.cooldown}`);
+assert("full pass-through does not consume", stuffed.dashes === 1 && stuffed.stamina === P.climbMaxStamina);
+
+const tiredOnly = createLevel("room3");
+const tiredCrystal = tiredOnly.crystals[1]!;
+const weary = createPlayer(tiredCrystal.x + 4, tiredCrystal.y + 2);
+weary.dashes = 1;
+weary.stamina = 10;
+weary.onGround = false;
+integratePlayer(weary, hold(0, false), tiredOnly, TICK);
+assert("tired with a dash still eats crystal", weary.stamina === P.climbMaxStamina && tiredCrystal.cooldown > 0, `stam=${weary.stamina}`);
+
+const waitCd = createLevel("room3");
+const waiting = waitCd.crystals[0]!;
+waiting.cooldown = P.crystalCooldown;
+const idle = createPlayer(0, 0);
+const cdFrames = Math.ceil(P.crystalCooldown / TICK) + 1;
+for (let i = 0; i < cdFrames; i++) integratePlayer(idle, hold(0, false), waitCd, TICK);
+assert("crystal respawns after 2.5s", waiting.cooldown === 0, `cd=${waiting.cooldown}`);
+
+const springLevel = createLevel("room2");
+const spring = springLevel.springs[0]!;
+const bouncer = createPlayer(spring.x + 4, spring.y - PLAYER_H + 2);
+bouncer.vx = 80;
+bouncer.vy = 40;
+bouncer.dashes = 0;
+bouncer.stamina = 8;
+bouncer.onGround = false;
+integratePlayer(bouncer, hold(0, false), springLevel, TICK);
+assert("spring bounce sets vy to -185", Math.abs(bouncer.vy - P.springVelocity) < 0.01, `vy=${bouncer.vy}`);
+assert("spring clears horizontal speed", bouncer.vx === 0, `vx=${bouncer.vx}`);
+assert("spring sets AutoJump + VarJumpTime", bouncer.autoJump && Math.abs(bouncer.jumpTimer - P.varJumpTime) < TICK + 0.001, `auto=${bouncer.autoJump} jt=${bouncer.jumpTimer}`);
+assert("spring refills dash and stamina", bouncer.dashes === 1 && bouncer.stamina === P.climbMaxStamina);
+assert("spring clears coyote", bouncer.coyote === 0);
+
 const cam = createGame();
 assert("camera starts at room left", cam.camera.x === 0 && cam.camera.y === 0);
 const walked = cam.player.x + 200;

@@ -5,6 +5,7 @@ import {
   SPIKE,
   TILE,
   tileCheckpoint,
+  tileCrystal,
   tileFlag,
   tilePos,
   type Fill,
@@ -23,7 +24,7 @@ export const R3_FLOOR_TOP = 15;
 export const R3_LAND_A_TOP = 15;
 export const R3_PRACTICE_A_TOP = 11;
 export const R3_CLIMB_C_TOP = 8;
-export const R3_FINALE_TOP = 10;
+export const R3_TEACH_TOP = 8;
 export const R3_GOAL_TOP = 8;
 export const R3_SPIKE_TOP = 16;
 
@@ -72,22 +73,22 @@ export const R3_DASH_C_X1 = 51;
 export const R3_CP6_X = 52;
 export const R3_CP6_X1 = 54;
 
-export const R3_DROP_F_X = 55;
-export const R3_DROP_F_X1 = 56;
-export const R3_COYOTE_F_X0 = 57;
-export const R3_COYOTE_F_X1 = 58;
-export const R3_FOOT_F_X = 59;
-export const R3_WALL_F_X = 60;
-export const R3_DASH_F_X0 = 61;
-export const R3_DASH_F_X1 = 64;
-export const R3_CP7_X = 65;
-export const R3_CP7_X1 = 67;
-export const R3_GOAL_X0 = 68;
+export const R3_TEACH_X0 = 55;
+export const R3_TEACH_X1 = 57;
+export const R3_CRYSTAL_TEACH_X = 56;
+export const R3_CRYSTAL_TEACH_Y = 7;
+export const R3_VOID_X0 = 58;
+export const R3_VOID_X1 = 65;
+export const R3_CRYSTAL_AIR_X = 61;
+export const R3_CRYSTAL_AIR_Y = 9;
+export const R3_CP7_X = 66;
+export const R3_CP7_X1 = 68;
+export const R3_GOAL_X0 = 69;
 
 export const room3: RoomBlueprint = {
   id: "room3",
   next: null,
-  status: "Room 3 — coyote, dash, spikes, climb to G3.",
+  status: "Room 3 — coyote, dash, spikes, climb, crystals to G3.",
   spawn: tilePos(2, R3_ENTRY_TOP),
   checkpoints: [
     tileCheckpoint(0, 2, R3_ENTRY_TOP),
@@ -97,7 +98,7 @@ export const room3: RoomBlueprint = {
     tileCheckpoint(4, R3_CP4_X, R3_FLOOR_TOP),
     tileCheckpoint(5, R3_CP5_X, R3_FLOOR_TOP),
     tileCheckpoint(6, R3_CP6_X, R3_CLIMB_C_TOP),
-    tileCheckpoint(7, 66, R3_FINALE_TOP),
+    tileCheckpoint(7, 67, R3_TEACH_TOP),
   ],
   flag: tileFlag(70, R3_GOAL_TOP),
   goalLedge: { x: R3_GOAL_X0 * TILE, y: R3_GOAL_TOP * TILE, w: (COLS - R3_GOAL_X0) * TILE, h: TILE },
@@ -112,7 +113,13 @@ export const room3: RoomBlueprint = {
     { text: "G3", x: 70 * TILE + 1, y: R3_GOAL_TOP * TILE - 18 },
     { text: "climb", x: R3_WALL_C_X * TILE - 4, y: 72 },
     { text: "dash", x: R3_TOP_C_X1 * TILE + 8, y: 48 },
+    { text: "crystal", x: R3_CRYSTAL_TEACH_X * TILE - 8, y: R3_TEACH_TOP * TILE - 20 },
   ],
+  crystals: [
+    tileCrystal(R3_CRYSTAL_TEACH_X, R3_CRYSTAL_TEACH_Y),
+    tileCrystal(R3_CRYSTAL_AIR_X, R3_CRYSTAL_AIR_Y),
+  ],
+  springs: [],
   paint(fill: Fill) {
     fill(0, R3_ENTRY_X1, R3_ENTRY_TOP, R3_ENTRY_TOP + 1, SOLID);
     fill(R3_DROP_X0, R3_CP1_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
@@ -127,10 +134,8 @@ export const room3: RoomBlueprint = {
     fill(R3_WALL_C_X, R3_WALL_C_X, R3_CLIMB_C_TOP, ROWS - 1, SOLID);
     fill(R3_TOP_C_X0, R3_TOP_C_X1, R3_CLIMB_C_TOP, R3_CLIMB_C_TOP + 1, SOLID);
     fill(R3_CP6_X, R3_CP6_X1, R3_CLIMB_C_TOP, R3_CLIMB_C_TOP + 1, SOLID);
-    fill(R3_DROP_F_X, R3_DROP_F_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
-    fill(R3_FOOT_F_X, R3_FOOT_F_X, R3_FLOOR_TOP, ROWS - 1, SOLID);
-    fill(R3_WALL_F_X, R3_WALL_F_X, R3_FINALE_TOP, ROWS - 1, SOLID);
-    fill(R3_CP7_X, R3_CP7_X1, R3_FINALE_TOP, R3_FINALE_TOP + 1, SOLID);
+    fill(R3_TEACH_X0, R3_TEACH_X1, R3_TEACH_TOP, R3_TEACH_TOP + 1, SOLID);
+    fill(R3_CP7_X, R3_CP7_X1, R3_TEACH_TOP, R3_TEACH_TOP + 1, SOLID);
     fill(R3_GOAL_X0, COLS - 1, R3_GOAL_TOP, ROWS - 1, SOLID);
   },
 };
