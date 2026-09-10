@@ -3,7 +3,7 @@ import jumpUrl from "../assets/bichon-jump.png";
 import dashUrl from "../assets/bichon-dash.png";
 import { PLAYER_H, PLAYER_W, type Player } from "../player";
 
-/** On-screen footprint ~16×14 world pixels (tile=8, collider stays 8×10). */
+/** On-screen footprint ~16×14 world pixels (tile=8, collider stays 8×11). */
 export const BICHON_W = 16;
 export const BICHON_H = 14;
 /** Idle / dash feet sit on this row; jump ball hangs a little higher. */

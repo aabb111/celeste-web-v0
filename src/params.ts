@@ -1,6 +1,6 @@
 /** Central feel table. Pixel units, gravity positive downward, 60fps. */
 export const PLAYER_W = 8;
-export const PLAYER_H = 10;
+export const PLAYER_H = 11;
 
 /** NoelFB/Celeste-style player feel (web subset: dash + climb, no SuperWallJump). */
 export const P = {

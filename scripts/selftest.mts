@@ -5,6 +5,7 @@ import {
   CLIMB_BASE,
   CLIMB_FLOOR_X0,
   CLIMB_FLOOR_X1,
+  CLIMB_LEDGE_X0,
   CLIMB_TOP,
   COLS,
   DASH_LEDGE_X0,
@@ -31,7 +32,9 @@ import {
   playerRect,
   type Player,
 } from "../src/player.ts";
-import type { InputState } from "../src/input.ts";
+import { endDash } from "../src/dash.ts";
+import { tryStartClimb } from "../src/climb.ts";
+import { createInput, type InputState } from "../src/input.ts";
 
 const hold = (
   x: number,
@@ -70,6 +73,8 @@ function assert(name: string, ok: boolean, detail = "") {
   if (!ok) throw new Error(`FAIL ${name}${detail ? ` — ${detail}` : ""}`);
   console.log(`ok  ${name}`);
 }
+
+assert("collider height is 11", PLAYER_H === 11, `h=${PLAYER_H}`);
 
 const grounded = settleOnSpawn();
 assert("lands on start ground", grounded.onGround, `y=${grounded.y}`);
@@ -113,12 +118,15 @@ assert(
 );
 
 const booster = settleOnSpawn();
-const facing = booster.facing;
 simulate(booster, hold(0, true, true), 1);
+assert("jump h-boost skipped when no run input", Math.abs(booster.vx) < 1, `vx=${booster.vx}`);
+
+const boosterRun = settleOnSpawn();
+simulate(boosterRun, hold(1, true, true), 1);
 assert(
-  "jump h-boost uses facing when no run input",
-  Math.abs(booster.vx - P.jumpHBoost * facing) < 1,
-  `vx=${booster.vx}`,
+  "jump h-boost applies when input.x !== 0",
+  boosterRun.vx > P.jumpHBoost,
+  `vx=${boosterRun.vx}`,
 );
 
 const varJumper = settleOnSpawn();
@@ -369,6 +377,11 @@ for (let i = 0; i < 8 && !still.climbing; i++) {
   integratePlayer(still, hold(1, false, false, 0, false, true, 0), stillLevel, TICK);
 }
 assert("grabs wall", still.climbing, `x=${still.x} climb=${still.climbing}`);
+const stillNoMove = Math.ceil(P.climbNoMoveTime / TICK) + 1;
+for (let i = 0; i < stillNoMove + 24 && still.onGround; i++) {
+  integratePlayer(still, hold(0, false, false, 0, false, true, -1), stillLevel, TICK);
+}
+assert("hangs off the floor before still drain", still.climbing && !still.onGround, `climb=${still.climbing} gnd=${still.onGround}`);
 const stam0 = still.stamina;
 for (let i = 0; i < 60; i++) integratePlayer(still, hold(0, false, false, 0, false, true, 0), stillLevel, TICK);
 assert("still drain uses ClimbStillCost", stam0 - still.stamina > 8 && stam0 - still.stamina < 12, `d=${stam0 - still.stamina}`);
@@ -413,13 +426,18 @@ for (let i = 0; i < 8 && !intoWall.climbing; i++) {
   integratePlayer(intoWall, hold(1, false, false, 0, false, true, 0), intoLevel, TICK);
 }
 const stamInto = intoWall.stamina;
+const intoY = intoWall.y;
 integratePlayer(intoWall, hold(1, true, true, 0, false, true, 0), intoLevel, TICK);
 assert(
-  "hold-into-wall jump is still WallJump away",
-  intoWall.vx <= -P.wallJumpHSpeed + 1 && !intoWall.climbing,
-  `vx=${intoWall.vx} climb=${intoWall.climbing}`,
+  "hold-into-wall jump does not kick away",
+  Math.abs(intoWall.vx) < P.wallJumpHSpeed * 0.5 &&
+    !intoWall.climbing &&
+    intoWall.forceMoveXTimer === 0 &&
+    intoWall.vy <= P.jumpVelocity + 1,
+  `vx=${intoWall.vx} climb=${intoWall.climbing} force=${intoWall.forceMoveXTimer} vy=${intoWall.vy}`,
 );
-assert("hold-into-wall WallJump spends no ClimbJumpCost", stamInto - intoWall.stamina < 1, `d=${stamInto - intoWall.stamina}`);
+assert("hold-into-wall hop moves same frame", intoWall.y < intoY - 0.5, `y0=${intoY} y=${intoWall.y}`);
+assert("hold-into-wall jump spends no ClimbJumpCost", stamInto - intoWall.stamina < 1, `d=${stamInto - intoWall.stamina}`);
 
 const tired = createPlayer((WALL_X0 - 1) * TILE, 70);
 const tiredLevel = createLevel();
@@ -453,17 +471,19 @@ for (let i = 0; i < 24 && cJump.onGround; i++) {
   integratePlayer(cJump, hold(0, false, false, 0, false, true, -1), cJumpLevel, TICK);
 }
 const stamJump = cJump.stamina;
+const cJumpY = cJump.y;
 integratePlayer(cJump, hold(0, true, true, 0, false, true, 0), cJumpLevel, TICK);
 assert(
-  "grab jump is WallJump away from wall",
+  "neutral grab jump does not kick away",
   !cJump.climbing &&
-    cJump.vx <= -P.wallJumpHSpeed + 1 &&
+    Math.abs(cJump.vx) < P.wallJumpHSpeed * 0.5 &&
     cJump.vy <= P.jumpVelocity + 1 &&
     cJump.jumpTimer === P.varJumpTime &&
-    cJump.forceMoveXTimer === P.wallJumpForceTime,
+    cJump.forceMoveXTimer === 0,
   `vx=${cJump.vx} vy=${cJump.vy} climb=${cJump.climbing} force=${cJump.forceMoveXTimer}`,
 );
-assert("WallJump does not spend ClimbJumpCost", stamJump - cJump.stamina < 1, `d=${stamJump - cJump.stamina}`);
+assert("neutral grab hop moves same frame", cJump.y < cJumpY - 0.5, `y0=${cJumpY} y=${cJump.y}`);
+assert("ClimbJump is absent (no stamina tax)", stamJump - cJump.stamina < 1, `d=${stamJump - cJump.stamina}`);
 
 const wJump = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
 const wJumpLevel = createLevel();
@@ -472,9 +492,17 @@ for (let i = 0; i < 8 && !wJump.climbing; i++) {
   integratePlayer(wJump, hold(1, false, false, 0, false, true, 0), wJumpLevel, TICK);
 }
 const stamW = wJump.stamina;
+const wJumpX = wJump.x;
+const wJumpY = wJump.y;
 integratePlayer(wJump, hold(-1, true, true, 0, false, true, 0), wJumpLevel, TICK);
 assert("away jump is WallJump", wJump.vx <= -P.wallJumpHSpeed + 1, `vx=${wJump.vx}`);
 assert("WallJump uses JumpSpeed", wJump.vy <= P.jumpVelocity + 1, `vy=${wJump.vy}`);
+assert("WallJump locks forceMoveX", wJump.forceMoveXTimer === P.wallJumpForceTime, `force=${wJump.forceMoveXTimer}`);
+assert(
+  "WallJump moves same frame",
+  wJump.x < wJumpX - 0.5 || wJump.y < wJumpY - 0.5,
+  `x0=${wJumpX} x=${wJump.x} y0=${wJumpY} y=${wJump.y}`,
+);
 assert("WallJump does not spend stamina", stamW - wJump.stamina < 1, `d=${stamW - wJump.stamina}`);
 
 const dashOff = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
@@ -522,6 +550,142 @@ assert(
   dashFromDashLedge(full.player, full.level, true),
   `x=${full.player.x} y=${full.player.y}`,
 );
+
+const reaim = settleOnSpawn();
+integratePlayer(reaim, hold(1, false, false, 0, true), createLevel(), TICK);
+const lockedX = reaim.dashDirX;
+const lockedY = reaim.dashDirY;
+while (reaim.dashFreeze > 0) {
+  integratePlayer(reaim, hold(-1, true, false, -1), createLevel(), TICK);
+}
+assert(
+  "dash freeze locks aim (no re-aim)",
+  Math.abs(reaim.dashDirX - lockedX) < 0.01 &&
+    Math.abs(reaim.dashDirY - lockedY) < 0.01 &&
+    reaim.dashDirX > 0 &&
+    reaim.vx > 0,
+  `dir=${reaim.dashDirX},${reaim.dashDirY} vx=${reaim.vx}`,
+);
+
+const holdJumpDash = settleOnSpawn();
+integratePlayer(holdJumpDash, hold(1, true, false, 0, true), createLevel(), TICK);
+assert(
+  "hold-jump dash does not force up-diagonal",
+  holdJumpDash.dashDirY === 0 && holdJumpDash.dashDirX > 0,
+  `dir=${holdJumpDash.dashDirX},${holdJumpDash.dashDirY}`,
+);
+
+const floater = createPlayer(16, 0);
+floater.onGround = false;
+integratePlayer(floater, hold(0, false, false, -1, true), createLevel(), TICK);
+for (let i = 0; i < 20 && (floater.dashing || floater.dashLaunch || floater.dashFreeze > 0); i++) {
+  integratePlayer(floater, hold(0, false, false, -1), createLevel(), TICK);
+}
+assert("endDash sets AutoJump", floater.autoJump && !floater.dashing, `auto=${floater.autoJump} dash=${floater.dashing}`);
+for (let i = 0; i < 40 && Math.abs(floater.vy) >= P.halfGravThreshold; i++) {
+  integratePlayer(floater, hold(0, false), createLevel(), TICK);
+}
+const apexVy = floater.vy;
+integratePlayer(floater, hold(0, false), createLevel(), TICK);
+const dvy = floater.vy - apexVy;
+assert(
+  "AutoJump applies half-grav at apex without jump held",
+  floater.autoJump && dvy > 0 && dvy < P.gravity * TICK * 0.75,
+  `dvy=${dvy} auto=${floater.autoJump} vy=${floater.vy}`,
+);
+
+const dashJump = settleOnSpawn();
+const dashJumpLevel = createLevel();
+integratePlayer(dashJump, hold(1, false, false, 0, true), dashJumpLevel, TICK);
+let jumpedFromDash = false;
+for (let i = 0; i < 24; i++) {
+  const press = dashJump.dashing && dashJump.dashFreeze <= 0;
+  integratePlayer(dashJump, hold(1, true, press), dashJumpLevel, TICK);
+  if (!dashJump.dashing && dashJump.vy < -20) {
+    jumpedFromDash = true;
+    break;
+  }
+}
+assert("jump buffer still consumes after endDash", jumpedFromDash, `vy=${dashJump.vy} dash=${dashJump.dashing} gnd=${dashJump.onGround}`);
+
+const clipped = createPlayer(16, 40);
+clipped.dashDirX = 0;
+clipped.dashDirY = -1;
+clipped.vx = 0;
+clipped.vy = 0;
+clipped.dashClipY = true;
+clipped.dashing = true;
+endDash(clipped);
+assert("ceiling-clipped endDash does not bounce up", clipped.vy >= 0, `vy=${clipped.vy}`);
+assert("endDash AutoJump until land", clipped.autoJump);
+
+const underLedge = createPlayer(54 * TILE + 2, CLIMB_TOP * TILE + 2 * TILE + 4);
+underLedge.onGround = false;
+integratePlayer(underLedge, hold(0, false, false, -1, true), createLevel(), TICK);
+for (let i = 0; i < 20 && (underLedge.dashing || underLedge.dashLaunch || underLedge.dashFreeze > 0); i++) {
+  integratePlayer(underLedge, hold(0, false, false, -1), createLevel(), TICK);
+}
+assert(
+  "ceiling dash end does not bounce upward",
+  underLedge.vy >= -8,
+  `vy=${underLedge.vy} clipY=${underLedge.dashClipY}`,
+);
+
+const riseGrab = createPlayer((WALL_X0 - 1) * TILE - 2, 70);
+riseGrab.facing = 1;
+riseGrab.vy = -80;
+riseGrab.onGround = false;
+const riseLevel = createLevel();
+integratePlayer(riseGrab, hold(1, false, false, 0, false, true, 0), riseLevel, TICK);
+assert("can grab while rising", riseGrab.climbing, `climb=${riseGrab.climbing} vy=${riseGrab.vy}`);
+
+const probeLevel = createLevel();
+const probe = createPlayer((CLIMB_LEDGE_X0 + 3) * TILE, CLIMB_TOP * TILE + 2 * TILE + 1);
+probe.facing = -1;
+probe.vx = 0;
+probe.vy = 20;
+probe.onGround = false;
+const latched = tryStartClimb(probe, hold(0, false, false, 0, false, true, 0), probeLevel);
+assert(
+  "up-probe can latch a wall lip",
+  latched && probe.climbing && probe.y < CLIMB_TOP * TILE + 2 * TILE,
+  `latch=${latched} climb=${probe.climbing} y=${probe.y}`,
+);
+
+const listeners: Record<string, (e: { code: string; preventDefault(): void }) => void> = {};
+const input = createInput({
+  addEventListener(type: string, fn: (e: { code: string; preventDefault(): void }) => void) {
+    listeners[type] = fn;
+  },
+} as unknown as Window);
+const press = (code: string) => listeners.keydown?.({ code, preventDefault() {} });
+const release = (code: string) => listeners.keyup?.({ code, preventDefault() {} });
+press("ArrowUp");
+const upOnly = input.poll();
+assert(
+  "Up key does not jump",
+  !upOnly.jumpPressed && !upOnly.jumpHeld && upOnly.y === -1 && upOnly.moveY === -1,
+  `jump=${upOnly.jumpPressed} held=${upOnly.jumpHeld} y=${upOnly.y}`,
+);
+release("ArrowUp");
+input.poll();
+press("KeyW");
+const wOnly = input.poll();
+assert("W key does not jump", !wOnly.jumpPressed && !wOnly.jumpHeld && wOnly.y === -1);
+release("KeyW");
+input.poll();
+press("Space");
+const space = input.poll();
+assert(
+  "Space jumps without writing aimY",
+  space.jumpPressed && space.jumpHeld && space.y === 0,
+  `jump=${space.jumpPressed} y=${space.y}`,
+);
+release("Space");
+input.poll();
+press("KeyC");
+const keyC = input.poll();
+assert("C jumps without writing aimY", keyC.jumpPressed && keyC.y === 0, `y=${keyC.y}`);
 
 const cam = createGame();
 assert("camera starts at room left", cam.camera.x === 0 && cam.camera.y === 0);

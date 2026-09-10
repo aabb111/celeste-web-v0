@@ -23,11 +23,26 @@ assert("grab alone does not climb", grabHold.moveY === 0 && grabHold.grabHeld);
 
 input.virtual.grab = false;
 input.virtual.up = true;
-const jumpUp = input.poll();
-assert("up without grab jumps", jumpUp.jumpHeld && jumpUp.moveY === -1 && !jumpUp.grabHeld);
+const aimUp = input.poll();
+assert(
+  "up without grab aims and does not jump",
+  !aimUp.jumpHeld && !aimUp.jumpPressed && aimUp.moveY === -1 && !aimUp.grabHeld,
+  `jump=${aimUp.jumpHeld} pressed=${aimUp.jumpPressed} moveY=${aimUp.moveY}`,
+);
 
-assert("virtual pad Up writes input.y", jumpUp.y === -1, `y=${jumpUp.y}`);
+assert("virtual pad Up writes input.y", aimUp.y === -1, `y=${aimUp.y}`);
 
+input.virtual.up = false;
+input.virtual.jump = true;
+const padJump = input.poll();
+assert(
+  "virtual Jump still jumps without aiming up",
+  padJump.jumpHeld && padJump.jumpPressed && padJump.y === 0,
+  `jump=${padJump.jumpHeld} y=${padJump.y}`,
+);
+input.virtual.jump = false;
+input.poll();
+input.virtual.up = true;
 input.virtual.right = true;
 const diagAim = input.poll();
 assert(

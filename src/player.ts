@@ -1,7 +1,6 @@
 import { approach } from "./aabb";
 import { moveAndCollide, snapToFloor } from "./collide";
 import {
-  applyWallBoost,
   endClimb,
   refillStamina,
   resetClimb,
@@ -14,7 +13,6 @@ import {
   wallSlideCap,
 } from "./climb";
 import {
-  aimDash,
   bufferDash,
   canDash,
   endDash,
@@ -53,8 +51,11 @@ export type Player = {
   dashBuffer: number;
   dashDirX: number;
   dashDirY: number;
+  dashClipX: boolean;
+  dashClipY: boolean;
   dashing: boolean;
   dashLaunch: boolean;
+  autoJump: boolean;
   stamina: number;
   climbing: boolean;
   climbDir: 1 | -1;
@@ -110,7 +111,6 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
 
   if (isDashFrozen(player)) {
     player.dashFreeze = Math.max(0, player.dashFreeze - dt);
-    aimDash(player, input);
     if (isDashFrozen(player)) return;
   }
 
@@ -126,6 +126,12 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
 
   if (player.dashing) {
     stepDash(player, input, level, dt);
+    if (player.dashing) return;
+    applyJump(player, input, level, dt);
+    tryStartClimb(player, input, level);
+    tickForceMove(player, dt);
+    refillDashIfGrounded(player);
+    refillStamina(player);
     return;
   }
 
@@ -137,11 +143,11 @@ export function integratePlayer(player: Player, input: InputState, level: Level,
 
   applyRun(player, input, dt);
   applyMaxFall(player, input, dt);
+  applyJump(player, input, level, dt);
   applyGravity(player, input, level, dt);
   applyVarJump(player, input, dt);
-  applyWallBoost(player, input, dt);
   moveAndCollide(player, level, dt);
-  applyJump(player, input, level, dt);
+  if (player.onGround) player.autoJump = false;
   tryStartClimb(player, input, level);
   tickForceMove(player, dt);
   refillDashIfGrounded(player);
@@ -176,10 +182,11 @@ function applyMaxFall(player: Player, input: InputState, dt: number) {
 }
 
 function applyGravity(player: Player, input: InputState, level: Level, dt: number) {
+  if (player.onGround) return;
   const risingOrApex = Math.abs(player.vy) < P.halfGravThreshold;
-  const halfGrav = input.jumpHeld && risingOrApex;
+  const halfGrav = (input.jumpHeld || player.autoJump) && risingOrApex;
   const grav = P.gravity * (halfGrav ? P.holdJumpGravityMul : 1);
-  const slide = !player.onGround ? wallSlideCap(player, input, level) : null;
+  const slide = wallSlideCap(player, input, level);
   const cap = slide ?? player.maxFall;
   player.vy = approach(player.vy, cap, grav * dt);
 }
@@ -196,8 +203,7 @@ function applyJump(player: Player, input: InputState, level: Level, dt: number) 
   player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
   if (player.buffer <= 0) return;
   if (player.coyote > 0) {
-    const boostDir = input.x !== 0 ? Math.sign(input.x) : player.facing;
-    player.vx += P.jumpHBoost * boostDir;
+    if (input.x !== 0) player.vx += P.jumpHBoost * Math.sign(input.x);
     player.vy = P.jumpVelocity;
     player.varJumpSpeed = player.vy;
     player.onGround = false;
