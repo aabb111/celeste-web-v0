@@ -49,7 +49,7 @@ y-down tile rows (same as Room1). Brief heights (“y8 / y10”) are stand-on he
 - Spike pit ~4 tiles (`x30–33`) — **CP2** ≈ `x37`
 - Climbable wall `x39–40` from y=15 up to y=7 (~8 tiles)
 - Wall-top `x41–43` — **CP3** ≈ `x42`
-- 5-tile must-dash up to a high ledge `x49–52` (y=4) — **CP4** ≈ `x50`
+- Same-height 4-tile dash to ledge `x48–52` (top7) — **CP4** ≈ `x50`
 - Spring teach: low platform `x53–55` (top12) with a floor spring ≈ `(54, 12)`
 - High platform `x57–61` (top7, +1 tile toward the spring) — **CP5** ≈ `x59`
 - 4-tile same-height must-dash void `x62–65`
@@ -61,8 +61,8 @@ y-down tile rows (same as Room1/2). Brief heights (“y10 / y2 / y9”) are stan
 
 - Entry **S3** / **CP0** on a high platform `x0–2` at y10 (row 7)
 - Drop `x3–6` to the default floor (y2 / row 15) — **CP1** ≈ `x7`
-- Combo A `x9–19`: 2-tile coyote + 2-tile footing + 5-tile must-dash up — **CP2** ≈ `x20` (row 11)
-- Practice A `x22–27`: 2-tile coyote + 2-tile footing + short dash — **CP3** ≈ `x28`
+- Combo A same-height 4-tile dash on the floor — **CP2** ≈ `x20`
+- Practice A raised pads — **CP3** ≈ `x30`
 - Combo B spike pit width 5 (`x31–35`, buffer jump + air dash) — **CP4** ≈ `x37`
 - Practice B spike width 4 (`x39–42`) — **CP5** ≈ `x43`
 - Combo C: climb ~7 tiles to y9, 2-tile top, 5-tile dash — **CP6** ≈ `x53–54` (top8)
