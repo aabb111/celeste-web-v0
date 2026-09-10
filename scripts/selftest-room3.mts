@@ -259,27 +259,31 @@ function walkToTeach(player: Player, level: ReturnType<typeof room3>) {
 function crystalGapTo(player: Player, level: ReturnType<typeof room3>, destX: number) {
   if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
   if (!walkToTeach(player, level)) return false;
-  for (let i = 0; i < 12; i++) {
+  const edge = (R3_TEACH_X0 + 2) * TILE - PLAYER_W - 1;
+  for (let i = 0; i < 40 && player.x < edge; i++) {
     integratePlayer(player, hold(1, false), level, TICK);
     if (died(player, level)) return false;
   }
   integratePlayer(player, hold(1, true, true, 0), level, TICK);
-  let dashed = false;
+  let firstDash = false;
   for (let i = 0; i < 280; i++) {
-    const canSecond =
+    const overDest = player.x >= destX;
+    const onDest = player.onGround && overDest;
+    if (level.hitsFlag(playerRect(player)) || onDest) return true;
+    const refilledAir =
       !player.dashing &&
       player.dashFreeze <= 0 &&
       player.dashCooldown <= 0 &&
       player.dashes > 0 &&
       !player.onGround &&
-      player.x < destX;
-    const pressDash = (!dashed && i === 6) || canSecond;
-    if (pressDash) dashed = true;
-    integratePlayer(player, hold(1, true, false, canSecond ? -1 : 0, pressDash), level, TICK);
-    if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
+      !overDest;
+    const pressDash = (!firstDash && i === 4) || refilledAir;
+    if (pressDash) firstDash = true;
+    const aimY = refilledAir || (!player.onGround && player.x > (R3_TEACH_X0 + 3) * TILE) ? -1 : 0;
+    integratePlayer(player, hold(overDest ? 0 : 1, true, false, aimY, pressDash), level, TICK);
     if (died(player, level)) return false;
   }
-  return false;
+  return player.onGround && player.x >= destX;
 }
 
 const r3 = room3();

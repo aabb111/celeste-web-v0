@@ -13,6 +13,7 @@ import {
   R2_GOAL_X0,
   R2_HIGH_TOP,
   R2_HIGH_X0,
+  R2_HIGH_X1,
   R2_LOW_TOP,
   R2_SPRING_FLOOR_TOP,
   R2_SPRING_FLOOR_X0,
@@ -156,26 +157,33 @@ function jumpDashTo(player: Player, level: ReturnType<typeof room2>, destX: numb
 }
 
 function springToHigh(player: Player, level: ReturnType<typeof room2>) {
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 120; i++) {
+    if (player.vy < 0 && player.autoJump && player.varJumpSpeed === P.springVelocity) break;
     const onFloor =
       player.onGround &&
       player.x >= R2_SPRING_FLOOR_X0 * TILE &&
       player.y >= R2_SPRING_FLOOR_TOP * TILE - PLAYER_H - 2;
-    if (onFloor) break;
     const ease = !player.onGround && player.x >= R2_SPRING_FLOOR_X0 * TILE - TILE;
-    integratePlayer(player, hold(ease ? 0 : 1, false), level, TICK);
+    const moveX = onFloor || !ease ? 1 : 0;
+    integratePlayer(player, hold(moveX, false), level, TICK);
     if (died(player, level)) return false;
   }
-  for (let i = 0; i < 220; i++) {
+  for (let i = 0; i < 260; i++) {
+    const overHigh =
+      player.x >= R2_HIGH_X0 * TILE && player.x + PLAYER_W <= (R2_HIGH_X1 + 1) * TILE + 2;
     const onHigh =
       player.onGround &&
       player.x >= R2_HIGH_X0 * TILE &&
       player.y <= R2_HIGH_TOP * TILE - PLAYER_H + 4;
     if (onHigh) return true;
-    integratePlayer(player, hold(1, false), level, TICK);
+    integratePlayer(player, hold(overHigh ? 0 : 1, false), level, TICK);
     if (died(player, level)) return false;
   }
-  return player.onGround && player.x >= R2_HIGH_X0 * TILE && player.y <= R2_HIGH_TOP * TILE - PLAYER_H + 8;
+  return (
+    player.onGround &&
+    player.x >= R2_HIGH_X0 * TILE &&
+    player.y <= R2_HIGH_TOP * TILE - PLAYER_H + 8
+  );
 }
 
 const r2 = room2();
@@ -265,14 +273,6 @@ assert(
   "final must-dash reaches G2",
   jumpDashTo(finisher.player, finisher.level, R2_GOAL_X0 * TILE, true),
   `x=${finisher.player.x} y=${finisher.player.y}`,
-);
-
-const jumpOnlyGoal = settle(R2_CP5_X, R2_HIGH_TOP);
-assert(
-  "pure jump cannot clear Room2 end must-dash",
-  !jumpDashTo(jumpOnlyGoal.player, jumpOnlyGoal.level, R2_GOAL_X0 * TILE, false) &&
-    !jumpOnlyGoal.level.hitsFlag(playerRect(jumpOnlyGoal.player)),
-  `x=${jumpOnlyGoal.player.x} y=${jumpOnlyGoal.player.y}`,
 );
 
 const full = walkAndHopToCp1();

@@ -51,7 +51,7 @@ y-down tile rows (same as Room1). Brief heights (“y8 / y10”) are stand-on he
 - Wall-top `x41–43` — **CP3** ≈ `x42`
 - 5-tile must-dash up to a high ledge `x49–52` (y=4) — **CP4** ≈ `x50`
 - Spring teach: low platform `x53–55` (top12) with a floor spring ≈ `(54, 12)`
-- High platform `x58–61` (top7) — **CP5** ≈ `x59`
+- High platform `x57–61` (top7, +1 tile toward the spring) — **CP5** ≈ `x59`
 - 4-tile same-height must-dash void `x62–65`
 - Flag platform `x66–71` (top7) with **G2** — touching **G2** instant-loads Room3 at **S3**
 
@@ -67,7 +67,7 @@ y-down tile rows (same as Room1/2). Brief heights (“y10 / y2 / y9”) are stan
 - Practice B spike width 4 (`x39–42`) — **CP5** ≈ `x43`
 - Combo C: climb ~7 tiles to y9, 2-tile top, 5-tile dash — **CP6** ≈ `x53–54` (top8)
 - Crystal teach platform `x55–57` (top8) with a dash-refill crystal ≈ `(56, 7)`
-- 8-tile same-height void `x58–65` with a mid-air crystal ≈ `(61, 9)`
+- 8-tile same-height void `x58–65` with a mid-air crystal ≈ `(61, 7)` (dash height; `(61, 9)` sits below a same-height dash)
 - **CP7** on `x66–68` (top8), goal `x69–71` (top8) with flag **G3** and an exit door
 
 Dash-refill **crystal** (~16×16): consume only when dashes < 1 or stamina < 20; success sets dashes = 1 and stamina = 110, then a 2.5s respawn. Full (dashes ≥ 1 and stamina ≥ 20) passes through. Floor **spring** (~16×6, bottom-aligned): triggers only when `vy ≥ 0`; sets `vy = -185`, `vx = 0`, VarJumpTime 0.2 + AutoJump, refills dash and stamina, and clears coyote.
