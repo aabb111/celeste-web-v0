@@ -61,6 +61,7 @@ export function beginClimb(player: Player, level: Level, dir: 1 | -1) {
 
 export function tryStartClimb(player: Player, input: InputState, level: Level): boolean {
   if (!input.grabHeld || isTired(player) || player.climbing) return false;
+  if (player.forceMoveXTimer > 0) return false;
   if (Math.sign(player.vx) === -player.facing) return false;
   const dir = player.facing;
   if (againstWall(player, level, dir, P.climbCheckDist)) {
@@ -117,7 +118,7 @@ function climbHop(player: Player) {
   player.vx = player.facing * P.climbHopX;
   player.vy = Math.min(player.vy, P.climbHopY);
   player.varJumpSpeed = player.vy;
-  player.forceMoveX = 0;
+  player.forceMoveX = player.facing;
   player.forceMoveXTimer = P.climbHopForceTime;
   player.jumpTimer = 0;
   endClimb(player);
@@ -151,8 +152,10 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
   }
 
   if (!againstWall(player, level, player.climbDir, P.climbCheckDist)) {
-    if (player.vy < 0) climbHop(player);
-    else endClimb(player);
+    if (player.vy < 0) {
+      climbHop(player);
+      moveAndCollide(player, level, dt);
+    } else endClimb(player);
     return;
   }
 
@@ -168,6 +171,7 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
       trySlip = true;
     } else if (slipCheck(player, level)) {
       climbHop(player);
+      moveAndCollide(player, level, dt);
       return;
     }
   } else if (input.moveY > 0) {

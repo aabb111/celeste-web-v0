@@ -5,7 +5,7 @@ import {
   CLIMB_BASE,
   CLIMB_FLOOR_X0,
   CLIMB_FLOOR_X1,
-  CLIMB_LEDGE_X1,
+  CLIMB_LEDGE_X0,
   CLIMB_TOP,
   COLS,
   DASH_LEDGE_X0,
@@ -377,6 +377,11 @@ for (let i = 0; i < 8 && !still.climbing; i++) {
   integratePlayer(still, hold(1, false, false, 0, false, true, 0), stillLevel, TICK);
 }
 assert("grabs wall", still.climbing, `x=${still.x} climb=${still.climbing}`);
+const stillNoMove = Math.ceil(P.climbNoMoveTime / TICK) + 1;
+for (let i = 0; i < stillNoMove + 24 && still.onGround; i++) {
+  integratePlayer(still, hold(0, false, false, 0, false, true, -1), stillLevel, TICK);
+}
+assert("hangs off the floor before still drain", still.climbing && !still.onGround, `climb=${still.climbing} gnd=${still.onGround}`);
 const stam0 = still.stamina;
 for (let i = 0; i < 60; i++) integratePlayer(still, hold(0, false, false, 0, false, true, 0), stillLevel, TICK);
 assert("still drain uses ClimbStillCost", stam0 - still.stamina > 8 && stam0 - still.stamina < 12, `d=${stam0 - still.stamina}`);
@@ -635,7 +640,7 @@ integratePlayer(riseGrab, hold(1, false, false, 0, false, true, 0), riseLevel, T
 assert("can grab while rising", riseGrab.climbing, `climb=${riseGrab.climbing} vy=${riseGrab.vy}`);
 
 const probeLevel = createLevel();
-const probe = createPlayer((CLIMB_LEDGE_X1 + 1) * TILE, CLIMB_TOP * TILE + 2 * TILE + 1);
+const probe = createPlayer((CLIMB_LEDGE_X0 + 3) * TILE, CLIMB_TOP * TILE + 2 * TILE + 1);
 probe.facing = -1;
 probe.vx = 0;
 probe.vy = 20;

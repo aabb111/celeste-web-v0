@@ -139,7 +139,12 @@ function climbToWallTop(player: Player, level: ReturnType<typeof room2>) {
 }
 
 function jumpDashTo(player: Player, level: ReturnType<typeof room2>, destX: number, allowDash: boolean) {
-  for (let i = 0; i < 8; i++) integratePlayer(player, hold(0, false), level, TICK);
+  if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
+  for (let i = 0; i < 12; i++) {
+    integratePlayer(player, hold(0, false), level, TICK);
+    if (died(player, level)) return false;
+    if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
+  }
   integratePlayer(player, hold(1, true, true, -1), level, TICK);
   for (let i = 0; i < 8; i++) {
     integratePlayer(player, hold(1, true, false, -1, allowDash && i === 7), level, TICK);

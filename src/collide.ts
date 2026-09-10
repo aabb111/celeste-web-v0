@@ -14,6 +14,7 @@ export function moveAndCollide(player: Player, level: Level, dt: number) {
   player.onGround = false;
   resolveAxis(player, level, "y", prevBottom, wasOnGround);
   catchGoalLedge(player, level);
+  if (!player.onGround && !player.climbing) snapToFloor(player, level, 1);
 }
 
 /** Overlap a world AABB against solid tiles. */
