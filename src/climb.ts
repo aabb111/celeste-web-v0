@@ -20,8 +20,7 @@ export function resetClimb(player: Player) {
 }
 
 export function isTired(player: Player): boolean {
-  const check = player.wallBoostTimer > 0 ? player.stamina + P.climbJumpCost : player.stamina;
-  return check < P.climbTired;
+  return player.stamina < P.climbTired;
 }
 
 export function refillStamina(player: Player) {
@@ -53,6 +52,7 @@ export function beginClimb(player: Player, level: Level, dir: 1 | -1) {
   player.wallSlideTimer = P.wallSlideTime;
   player.wallBoostTimer = 0;
   player.lastClimbMove = 0;
+  player.autoJump = false;
   for (let i = 0; i < P.climbCheckDist; i++) {
     if (againstWall(player, level, dir, 1)) break;
     player.x += dir;
@@ -61,12 +61,23 @@ export function beginClimb(player: Player, level: Level, dir: 1 | -1) {
 
 export function tryStartClimb(player: Player, input: InputState, level: Level): boolean {
   if (!input.grabHeld || isTired(player) || player.climbing) return false;
-  if (player.vy < 0) return false;
   if (Math.sign(player.vx) === -player.facing) return false;
   const dir = player.facing;
-  if (!againstWall(player, level, dir, P.climbCheckDist)) return false;
-  beginClimb(player, level, dir);
-  return true;
+  if (againstWall(player, level, dir, P.climbCheckDist)) {
+    beginClimb(player, level, dir);
+    return true;
+  }
+  for (const lift of [1, 2]) {
+    if (overlapsSolid(level, player.x, player.y - lift, PLAYER_W, PLAYER_H)) continue;
+    const savedY = player.y;
+    player.y -= lift;
+    if (againstWall(player, level, dir, P.climbCheckDist)) {
+      beginClimb(player, level, dir);
+      return true;
+    }
+    player.y = savedY;
+  }
+  return false;
 }
 
 export function wallJump(player: Player, dir: 1 | -1, lockMove: boolean) {
@@ -84,6 +95,21 @@ export function wallJump(player: Player, dir: 1 | -1, lockMove: boolean) {
     player.forceMoveX = dir;
     player.forceMoveXTimer = P.wallJumpForceTime;
   }
+  endClimb(player);
+}
+
+/** Neutral / toward-wall hop: rise without kick-away or forceMoveX. */
+function weakClimbJump(player: Player) {
+  player.vy = P.jumpVelocity;
+  player.varJumpSpeed = player.vy;
+  player.jumpTimer = P.varJumpTime;
+  player.onGround = false;
+  player.coyote = 0;
+  player.buffer = 0;
+  player.wallSlideTimer = P.wallSlideTime;
+  player.wallBoostTimer = 0;
+  player.forceMoveX = 0;
+  player.forceMoveXTimer = 0;
   endClimb(player);
 }
 
@@ -112,7 +138,10 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
 
   player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
   if (player.buffer > 0) {
-    wallJump(player, -player.climbDir as 1 | -1, true);
+    const away = input.x !== 0 && Math.sign(input.x) === -player.climbDir;
+    if (away) wallJump(player, -player.climbDir as 1 | -1, true);
+    else weakClimbJump(player);
+    moveAndCollide(player, level, dt);
     return;
   }
 
@@ -175,16 +204,6 @@ function againstWallAt(player: Player, level: Level, yAdd: number): boolean {
   const dir = player.climbDir;
   if (dir > 0) return overlapsSolid(level, player.x + PLAYER_W, player.y + yAdd, 1, PLAYER_H);
   return overlapsSolid(level, player.x - 1, player.y + yAdd, 1, PLAYER_H);
-}
-
-export function applyWallBoost(player: Player, input: InputState, dt: number) {
-  if (player.wallBoostTimer <= 0) return;
-  player.wallBoostTimer = Math.max(0, player.wallBoostTimer - dt);
-  if (input.x === player.wallBoostDir && player.wallBoostDir !== 0) {
-    player.vx = P.wallJumpHSpeed * input.x;
-    player.stamina += P.climbJumpCost;
-    player.wallBoostTimer = 0;
-  }
 }
 
 /** Wall-slide fall cap, or null when not sliding. */

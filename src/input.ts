@@ -2,15 +2,14 @@ const LEFT = new Set(["ArrowLeft", "KeyA"]);
 const RIGHT = new Set(["ArrowRight", "KeyD"]);
 const DOWN = new Set(["ArrowDown", "KeyS"]);
 const UP = new Set(["ArrowUp", "KeyW"]);
-/** Jump keeps Space / C / Up / W. Z is grab (Celeste). */
-const JUMP = new Set(["Space", "ArrowUp", "KeyC", "KeyW"]);
-const JUMP_ONLY = new Set(["Space", "KeyC"]);
+/** Jump is Space / C only. Up / W aim and climb — they never jump. */
+const JUMP = new Set(["Space", "KeyC"]);
 const DASH = new Set(["KeyX"]);
 const GRAB = new Set(["KeyZ", "KeyV", "ShiftLeft"]);
 
 export type InputState = {
   x: number;
-  /** +1 down (fast-fall / down-dash), -1 up (dash aim; jump keys count). */
+  /** +1 down (fast-fall / down-dash), -1 up (dash aim; Up / W / virtual Up only). */
   y: number;
   /** Vertical for climb only — jump keys do not count. */
   moveY: number;
@@ -72,6 +71,7 @@ export function createInput(target: Window = window) {
       LEFT.has(e.code) ||
       RIGHT.has(e.code) ||
       DOWN.has(e.code) ||
+      UP.has(e.code) ||
       JUMP.has(e.code) ||
       DASH.has(e.code) ||
       isGrabCode(e.code) ||
@@ -96,12 +96,10 @@ export function createInput(target: Window = window) {
       const downHeld = [...DOWN].some((k) => keys.has(k)) || virtual.down;
       const upHeld = [...UP].some((k) => keys.has(k)) || virtual.up;
       const grabHeld = [...GRAB].some((k) => keys.has(k)) || virtual.grab;
-      const jumpCore = [...JUMP_ONLY].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
-      const jumpFromUp = upHeld && !grabHeld;
-      const jumpHeld = jumpCore || jumpFromUp;
+      const jumpHeld = [...JUMP].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
       const dashHeld = [...DASH].some((k) => keys.has(k)) || virtual.dash || virtual.dashPulse;
       const resetHeld = keys.has("KeyR") || virtual.reset || virtual.resetPulse;
-      const aimUp = upHeld || jumpHeld;
+      const aimUp = upHeld;
       const jumpPressed = jumpHeld && !jumpWasDown;
       const dashPressed = dashHeld && !dashWasDown;
       const resetPressed = resetHeld && !resetWasDown;

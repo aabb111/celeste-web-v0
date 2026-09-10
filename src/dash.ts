@@ -12,8 +12,11 @@ export function resetDash(player: Player) {
   player.dashBuffer = 0;
   player.dashDirX = 0;
   player.dashDirY = 0;
+  player.dashClipX = false;
+  player.dashClipY = false;
   player.dashing = false;
   player.dashLaunch = false;
+  player.autoJump = false;
 }
 
 export function isDashFrozen(player: Player): boolean {
@@ -62,7 +65,10 @@ export function startDash(player: Player, input: InputState) {
   player.dashTime = P.dashTime;
   player.dashing = true;
   player.dashLaunch = true;
+  player.dashClipX = false;
+  player.dashClipY = false;
   player.jumpTimer = 0;
+  player.autoJump = false;
   player.vx = 0;
   player.vy = 0;
   aimDash(player, input);
@@ -75,7 +81,7 @@ export function launchDash(player: Player) {
   let vy = player.dashDirY * P.dashSpeed;
   if (Math.sign(beforeVx) === Math.sign(vx) && Math.abs(beforeVx) > Math.abs(vx)) vx = beforeVx;
 
-  if (player.onGround && player.dashDirX !== 0 && player.dashDirY > 0 && vy > 0) {
+  if (player.onGround && player.dashDirX !== 0 && player.dashDirY >= 0.5 && vy > 0) {
     player.dashDirX = Math.sign(player.dashDirX);
     player.dashDirY = 0;
     vy = 0;
@@ -92,9 +98,10 @@ export function endDash(player: Player) {
   player.dashing = false;
   player.dashTime = 0;
   player.dashLaunch = false;
+  player.autoJump = true;
   if (player.dashDirY <= 0) {
-    player.vx = player.dashDirX * P.endDashSpeed;
-    player.vy = player.dashDirY * P.endDashSpeed;
+    if (!player.dashClipX) player.vx = player.dashDirX * P.endDashSpeed;
+    if (!player.dashClipY) player.vy = player.dashDirY * P.endDashSpeed;
   }
   if (player.vy < 0) player.vy *= P.endDashUpMult;
 }

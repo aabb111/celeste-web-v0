@@ -49,6 +49,7 @@ export function snapToFloor(player: Player, level: Level, dist: number) {
         player.y = tileY - PLAYER_H;
         player.vy = 0;
         player.onGround = true;
+        player.autoJump = false;
         return;
       }
     }
@@ -79,15 +80,19 @@ function resolveAxis(
         if (player.vx > 0) player.x = tileX - PLAYER_W;
         else if (player.vx < 0) player.x = tileX + TILE;
         player.vx = 0;
+        if (player.dashing) player.dashClipX = true;
       } else if (player.vy > 0) {
         player.y = tileY - PLAYER_H;
         player.vy = 0;
         player.onGround = true;
         player.jumpTimer = 0;
+        player.autoJump = false;
         if (!wasOnGround) player.landSquash = 1;
       } else if (player.vy < 0) {
         player.y = tileY + TILE;
         player.vy = 0;
+        player.jumpTimer = 0;
+        if (player.dashing) player.dashClipY = true;
       }
     }
   }
@@ -104,5 +109,6 @@ function catchGoalLedge(player: Player, level: Level) {
   player.vy = 0;
   player.onGround = true;
   player.jumpTimer = 0;
+  player.autoJump = false;
   player.landSquash = 1;
 }
