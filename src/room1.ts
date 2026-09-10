@@ -16,8 +16,8 @@ export const MID_TOP = 3;
 export const LAND_TOP = 4;
 export const CLIMB_BASE = 14;
 export const CLIMB_TOP = 8;
-export const PRACTICE_TOP = 12;
-export const DASH_TOP = 13;
+export const PRACTICE_TOP = 8;
+export const DASH_TOP = 8;
 /** Goal G at y8 (same y-down convention as the climb top). */
 export const GOAL_TOP = 8;
 export const SPIKE_TOP = 16;
@@ -32,9 +32,11 @@ export const COYOTE1_X1 = 22;
 export const COYOTE2_X0 = 25;
 export const COYOTE2_X1 = 29;
 export const SPIKE1_X0 = 30;
-export const SPIKE1_X1 = 34;
-export const SPIKE1_LAND_X0 = 35;
+export const SPIKE1_X1 = 33;
+export const SPIKE1_LAND_X0 = 34;
 export const SPIKE1_LAND_X1 = 40;
+/** Raised pit landing (was climb-base y14). */
+export const SPIKE1_LAND_TOP = 10;
 export const SPIKE2_X0 = 41;
 export const SPIKE2_X1 = 42;
 export const CLIMB_FLOOR_X0 = 43;
@@ -61,7 +63,7 @@ export const room1: RoomBlueprint = {
     tileCheckpoint(0, 2, GROUND_TOP),
     tileCheckpoint(1, 7, MID_TOP),
     tileCheckpoint(2, 27, LAND_TOP),
-    tileCheckpoint(3, 37, CLIMB_BASE),
+    tileCheckpoint(3, 37, SPIKE1_LAND_TOP),
     tileCheckpoint(4, 45, CLIMB_BASE),
     tileCheckpoint(5, 54, CLIMB_TOP),
     tileCheckpoint(6, 63, DASH_TOP),
@@ -82,7 +84,7 @@ export const room1: RoomBlueprint = {
     fill(COYOTE1_X0, COYOTE1_X1, LAND_TOP, LAND_TOP + 1, SOLID);
     fill(COYOTE2_X0, COYOTE2_X1, LAND_TOP, LAND_TOP + 1, SOLID);
     fill(SPIKE1_X0, SPIKE1_X1, SPIKE_TOP, ROWS - 1, SPIKE);
-    fill(SPIKE1_LAND_X0, SPIKE1_LAND_X1, CLIMB_BASE, ROWS - 1, SOLID);
+    fill(SPIKE1_LAND_X0, SPIKE1_LAND_X1, SPIKE1_LAND_TOP, ROWS - 1, SOLID);
     fill(SPIKE2_X0, SPIKE2_X1, SPIKE_TOP, ROWS - 1, SPIKE);
     fill(CLIMB_FLOOR_X0, CLIMB_FLOOR_X1, CLIMB_BASE, ROWS - 1, SOLID);
     fill(WALL_X0, WALL_X1, CLIMB_TOP, ROWS - 1, SOLID);

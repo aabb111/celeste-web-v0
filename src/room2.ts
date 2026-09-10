@@ -20,11 +20,11 @@ import {
 export const R2_ENTRY_TOP = 9;
 export const R2_LOW_TOP = 15;
 export const R2_WALL_TOP = 7;
-export const R2_DASH_LAND_TOP = 4;
+export const R2_DASH_LAND_TOP = 7;
 export const R2_COMBO_FLOOR_TOP = 12;
 export const R2_COMBO_WALL_TOP = 8;
 export const R2_PRE_GOAL_TOP = 10;
-export const R2_GOAL_TOP = 7;
+export const R2_GOAL_TOP = 10;
 export const R2_SPIKE_TOP = 16;
 
 export const R2_DROP_X1 = 9;
@@ -47,7 +47,7 @@ export const R2_WALL_X1 = 40;
 export const R2_WALL_TOP_X0 = 41;
 export const R2_WALL_TOP_X1 = 43;
 export const R2_CP3_X = 42;
-export const R2_DASH1_LAND_X0 = 49;
+export const R2_DASH1_LAND_X0 = 48;
 export const R2_DASH1_LAND_X1 = 52;
 export const R2_CP4_X = 50;
 export const R2_COMBO_FLOOR_X0 = 53;

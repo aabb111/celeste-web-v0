@@ -20,7 +20,8 @@ import {
  */
 export const R3_ENTRY_TOP = 7;
 export const R3_FLOOR_TOP = 15;
-export const R3_LAND_A_TOP = 11;
+export const R3_LAND_A_TOP = 15;
+export const R3_PRACTICE_A_TOP = 11;
 export const R3_CLIMB_C_TOP = 8;
 export const R3_FINALE_TOP = 10;
 export const R3_GOAL_TOP = 8;
@@ -34,10 +35,10 @@ export const R3_CP1_X1 = 8;
 export const R3_COYOTE_A_X0 = 9;
 export const R3_COYOTE_A_X1 = 10;
 export const R3_FOOT_A_X = 11;
-export const R3_FOOT_A_X1 = 12;
+export const R3_FOOT_A_X1 = 11;
 export const R3_DASH_A_X0 = 13;
-export const R3_DASH_A_X1 = 17;
-export const R3_LAND_A_X0 = 18;
+export const R3_DASH_A_X1 = 16;
+export const R3_LAND_A_X0 = 17;
 export const R3_CP2_X = 20;
 export const R3_CP2_X1 = 21;
 
@@ -46,9 +47,9 @@ export const R3_COYOTE_PA_X1 = 23;
 export const R3_FOOT_PA_X = 24;
 export const R3_FOOT_PA_X1 = 25;
 export const R3_DASH_PA_X0 = 26;
-export const R3_DASH_PA_X1 = 27;
-export const R3_CP3_X = 28;
-export const R3_CP3_X1 = 29;
+export const R3_DASH_PA_X1 = 29;
+export const R3_CP3_X = 30;
+export const R3_CP3_X1 = 30;
 
 export const R3_SPIKE_B_APPROACH = 30;
 export const R3_SPIKE_B_APPROACH_X1 = 30;
@@ -61,14 +62,14 @@ export const R3_CP4_X1 = 38;
 export const R3_SPIKE_PB_X0 = 39;
 export const R3_SPIKE_PB_X1 = 42;
 export const R3_CP5_X = 43;
-export const R3_CP5_X1 = 44;
+export const R3_CP5_X1 = 43;
 
 export const R3_WALL_C_X = 45;
 export const R3_TOP_C_X0 = 46;
 export const R3_TOP_C_X1 = 47;
 export const R3_DASH_C_X0 = 48;
-export const R3_DASH_C_X1 = 52;
-export const R3_CP6_X = 53;
+export const R3_DASH_C_X1 = 51;
+export const R3_CP6_X = 52;
 export const R3_CP6_X1 = 54;
 
 export const R3_DROP_F_X = 55;
@@ -92,7 +93,7 @@ export const room3: RoomBlueprint = {
     tileCheckpoint(0, 2, R3_ENTRY_TOP),
     tileCheckpoint(1, R3_CP1_X, R3_FLOOR_TOP),
     tileCheckpoint(2, R3_CP2_X, R3_LAND_A_TOP),
-    tileCheckpoint(3, R3_CP3_X, R3_LAND_A_TOP),
+    tileCheckpoint(3, R3_CP3_X, R3_PRACTICE_A_TOP),
     tileCheckpoint(4, R3_CP4_X, R3_FLOOR_TOP),
     tileCheckpoint(5, R3_CP5_X, R3_FLOOR_TOP),
     tileCheckpoint(6, R3_CP6_X, R3_CLIMB_C_TOP),
@@ -117,9 +118,8 @@ export const room3: RoomBlueprint = {
     fill(R3_DROP_X0, R3_CP1_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
     fill(R3_FOOT_A_X, R3_FOOT_A_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
     fill(R3_LAND_A_X0, R3_CP2_X1, R3_LAND_A_TOP, R3_LAND_A_TOP + 1, SOLID);
-    fill(R3_FOOT_PA_X, R3_FOOT_PA_X1, R3_LAND_A_TOP, R3_LAND_A_TOP + 1, SOLID);
-    fill(R3_CP3_X, R3_CP3_X1, R3_LAND_A_TOP, R3_LAND_A_TOP + 1, SOLID);
-    fill(R3_SPIKE_B_APPROACH, R3_SPIKE_B_APPROACH_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
+    fill(R3_FOOT_PA_X, R3_FOOT_PA_X1, R3_PRACTICE_A_TOP, R3_PRACTICE_A_TOP + 1, SOLID);
+    fill(R3_CP3_X, R3_CP3_X1, R3_PRACTICE_A_TOP, R3_PRACTICE_A_TOP + 1, SOLID);
     fill(R3_SPIKE_B_X0, R3_SPIKE_B_X1, R3_SPIKE_TOP, ROWS - 1, SPIKE);
     fill(R3_SPIKE_B_LAND_X0, R3_CP4_X1, R3_FLOOR_TOP, ROWS - 1, SOLID);
     fill(R3_SPIKE_PB_X0, R3_SPIKE_PB_X1, R3_SPIKE_TOP, ROWS - 1, SPIKE);

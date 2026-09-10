@@ -15,6 +15,7 @@ import {
   LAND_TOP,
   PRACTICE_WALL_X0,
   ROOM_W,
+  SPIKE1_LAND_TOP,
   SPIKE1_LAND_X0,
   SPIKE1_X0,
   TILE,
@@ -328,12 +329,12 @@ function dashFromDashLedge(player: Player, level: ReturnType<typeof createLevel>
   for (let i = 0; i < 40 && player.x < (DASH_LEDGE_X0 + 1) * TILE; i++) {
     integratePlayer(player, hold(1, false), level, TICK);
   }
-  integratePlayer(player, hold(1, true, true, -1), level, TICK);
+  integratePlayer(player, hold(1, true, true, 0), level, TICK);
   for (let i = 0; i < 8; i++) {
-    integratePlayer(player, hold(1, true, false, -1, allowDash && i === 7), level, TICK);
+    integratePlayer(player, hold(1, true, false, 0, allowDash && i === 7), level, TICK);
   }
   for (let i = 0; i < 180; i++) {
-    integratePlayer(player, hold(1, true, false, allowDash ? -1 : 0), level, TICK);
+    integratePlayer(player, hold(1, true, false, 0), level, TICK);
     if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= GOAL_X0 * TILE)) return true;
     if (level.hitsSpike(playerRect(player)) || isOutOfBounds(player)) return false;
   }
@@ -356,7 +357,12 @@ for (let i = 0; i < 8; i++) integratePlayer(pit, hold(1, true), pitLevel, TICK);
 let pitLanded = false;
 for (let i = 0; i < 140; i++) {
   integratePlayer(pit, hold(1, false), pitLevel, TICK);
-  if (pit.onGround && pit.x >= SPIKE1_LAND_X0 * TILE && pit.x < WALL_X0 * TILE && pit.y > 80) {
+  if (
+    pit.onGround &&
+    pit.x >= SPIKE1_LAND_X0 * TILE &&
+    pit.x < WALL_X0 * TILE &&
+    Math.abs(pit.y - (SPIKE1_LAND_TOP * TILE - PLAYER_H)) < 6
+  ) {
     pitLanded = true;
     break;
   }
@@ -570,8 +576,8 @@ assert("dash from CP6 reaches flag G", dashFromDashLedge(top, topLevel, true), `
 const jumpOnly = createPlayer(DASH_LEDGE_X0 * TILE, DASH_TOP * TILE - PLAYER_H);
 const jumpOnlyLevel = createLevel();
 assert(
-  "pure jump cannot clear must-dash gap",
-  !dashFromDashLedge(jumpOnly, jumpOnlyLevel, false) && !jumpOnlyLevel.hitsFlag(playerRect(jumpOnly)),
+  "same-height 4-tile dash gap is jump-clearable",
+  dashFromDashLedge(jumpOnly, jumpOnlyLevel, false) || jumpOnlyLevel.hitsFlag(playerRect(jumpOnly)),
   `x=${jumpOnly.x} y=${jumpOnly.y}`,
 );
 

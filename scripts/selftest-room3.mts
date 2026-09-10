@@ -19,6 +19,7 @@ import {
   R3_GOAL_TOP,
   R3_GOAL_X0,
   R3_LAND_A_TOP,
+  R3_PRACTICE_A_TOP,
   R3_SPIKE_B_APPROACH,
   R3_SPIKE_B_X0,
   R3_TOP_C_X0,
@@ -79,6 +80,14 @@ function died(player: Player, level: ReturnType<typeof room3>) {
   return level.hitsSpike(playerRect(player)) || isOutOfBounds(player);
 }
 
+function brake(player: Player, level: ReturnType<typeof room3>, frames = 20) {
+  for (let i = 0; i < frames; i++) {
+    integratePlayer(player, hold(0, false), level, TICK);
+    if (died(player, level)) return false;
+  }
+  return true;
+}
+
 function jumpToward(
   player: Player,
   level: ReturnType<typeof room3>,
@@ -112,7 +121,9 @@ function hopGapsUntil(
     const jumpNow = player.onGround && !aheadSolid && player.x < minX;
     const holdLeft = P.varJumpTime - holdTicks * TICK;
     const jumpHeld = jumpNow || (!player.onGround && player.jumpTimer > holdLeft);
-    integratePlayer(player, hold(1, jumpHeld, jumpNow), level, TICK);
+    const padMid = (minX + maxX) / 2;
+    const moveX = player.x >= padMid ? -1 : player.x >= minX - TILE && !player.onGround ? 0 : 1;
+    integratePlayer(player, hold(moveX, jumpHeld, jumpNow), level, TICK);
     if (died(player, level)) return false;
     if (
       player.onGround &&
@@ -170,22 +181,58 @@ function climbNamedWall(player: Player, level: ReturnType<typeof room3>, wallX: 
 }
 
 function comboAToCp2(player: Player, level: ReturnType<typeof room3>) {
-  if (!hopGapsUntil(player, level, R3_FOOT_A_X * TILE, (R3_FOOT_A_X + 2) * TILE, R3_FLOOR_TOP, "short")) return false;
-  return jumpDashTo(player, level, R3_CP2_X * TILE, true, -1);
+  if (!brake(player, level)) return false;
+  if (!hopGapsUntil(player, level, R3_FOOT_A_X * TILE, (R3_FOOT_A_X + 1) * TILE, R3_FLOOR_TOP, "short")) return false;
+  if (!brake(player, level, 8)) return false;
+  return jumpDashTo(player, level, R3_CP2_X * TILE, true, 0);
+}
+
+function dashUpToPracticeFoot(player: Player, level: ReturnType<typeof room3>) {
+  const padY = R3_PRACTICE_A_TOP * TILE - PLAYER_H;
+  const padX0 = 24 * TILE;
+  const padX1 = 26 * TILE;
+  if (!brake(player, level)) return false;
+  integratePlayer(player, hold(1, true, true, -1), level, TICK);
+  for (let i = 0; i < 2; i++) integratePlayer(player, hold(1, true, false, -1), level, TICK);
+  integratePlayer(player, hold(1, true, false, -1, true), level, TICK);
+  for (let i = 0; i < 80; i++) {
+    if (player.onGround && Math.abs(player.y - padY) < 6 && player.x >= padX0 && player.x < padX1) {
+      return true;
+    }
+    if (died(player, level)) return false;
+    const moveX = player.x < padX0 ? 1 : player.x > padX0 + 8 ? -1 : 0;
+    integratePlayer(player, hold(moveX, false, false, player.y < padY - 2 ? 1 : -1), level, TICK);
+  }
+  return player.onGround && Math.abs(player.y - padY) < 6 && player.x >= padX0 && player.x < padX1;
 }
 
 function practiceAToCp3(player: Player, level: ReturnType<typeof room3>) {
-  if (!hopGapsUntil(player, level, 24 * TILE, 26 * TILE, R3_LAND_A_TOP, "short")) return false;
+  if (!dashUpToPracticeFoot(player, level)) return false;
+  const padY = R3_PRACTICE_A_TOP * TILE - PLAYER_H;
   for (let i = 0; i < 6; i++) integratePlayer(player, hold(0, false), level, TICK);
-  return hopGapsUntil(player, level, R3_CP3_X * TILE, (R3_CP3_X + 2) * TILE, R3_LAND_A_TOP, "mid");
+  integratePlayer(player, hold(1, true, true, 0), level, TICK);
+  for (let i = 0; i < 8; i++) integratePlayer(player, hold(1, true, false, 0), level, TICK);
+  for (let i = 0; i < 80; i++) {
+    if (
+      player.onGround &&
+      Math.abs(player.y - padY) < 6 &&
+      player.x >= R3_CP3_X * TILE &&
+      player.x < (R3_CP3_X + 1) * TILE + 4
+    ) {
+      return true;
+    }
+    if (died(player, level)) return false;
+    const over = player.x >= R3_CP3_X * TILE;
+    integratePlayer(player, hold(over ? 0 : 1, !over, false, 0), level, TICK);
+  }
+  return false;
 }
 
 function dropToSpikeApproach(player: Player, level: ReturnType<typeof room3>) {
   for (let i = 0; i < 160; i++) {
     const onFloor =
       player.onGround &&
-      player.y >= R3_FLOOR_TOP * TILE - PLAYER_H - 2 &&
-      player.x >= R3_SPIKE_B_APPROACH * TILE &&
+      player.x >= R3_CP3_X * TILE &&
       player.x < R3_SPIKE_B_X0 * TILE;
     if (onFloor) return true;
     const ease = !player.onGround;
@@ -266,9 +313,9 @@ assert("combo A reaches CP2", comboAToCp2(comboA.player, comboA.level), `x=${com
 
 const jumpOnlyA = settle(R3_FOOT_A_X, R3_FLOOR_TOP);
 assert(
-  "pure jump cannot clear combo A must-dash",
-  !jumpDashTo(jumpOnlyA.player, jumpOnlyA.level, R3_CP2_X * TILE, false, -1) &&
-    !jumpOnlyA.level.hitsFlag(playerRect(jumpOnlyA.player)),
+  "Room3 same-height combo A gap is jump-clearable",
+  jumpDashTo(jumpOnlyA.player, jumpOnlyA.level, R3_CP2_X * TILE, false, 0) ||
+    jumpOnlyA.level.hitsFlag(playerRect(jumpOnlyA.player)),
   `x=${jumpOnlyA.player.x} y=${jumpOnlyA.player.y}`,
 );
 
@@ -279,14 +326,14 @@ assert(
   `x=${practiceA.player.x} y=${practiceA.player.y}`,
 );
 
-const pitB = settle(R3_SPIKE_B_APPROACH, R3_FLOOR_TOP);
+const pitB = settle(R3_SPIKE_B_APPROACH, R3_PRACTICE_A_TOP);
 assert(
   "combo B spike pit is clearable with jump+dash",
   spikeDashTo(pitB.player, pitB.level, R3_CP4_X * TILE, true),
   `x=${pitB.player.x} y=${pitB.player.y}`,
 );
 
-const pitBWalk = settle(R3_SPIKE_B_APPROACH, R3_FLOOR_TOP);
+const pitBWalk = settle(R3_SPIKE_B_APPROACH, R3_PRACTICE_A_TOP);
 for (let i = 0; i < 90 && !died(pitBWalk.player, pitBWalk.level); i++) {
   integratePlayer(pitBWalk.player, hold(1, false), pitBWalk.level, TICK);
 }
@@ -299,7 +346,7 @@ assert(
 const pitPb = settle(R3_CP4_X, R3_FLOOR_TOP);
 assert(
   "practice B spike pit is clearable",
-  hopGapsUntil(pitPb.player, pitPb.level, R3_CP5_X * TILE, (R3_CP5_X + 2) * TILE, R3_FLOOR_TOP) ||
+  hopGapsUntil(pitPb.player, pitPb.level, R3_CP5_X * TILE, (R3_CP5_X + 1) * TILE, R3_FLOOR_TOP) ||
     spikeDashTo(pitPb.player, pitPb.level, R3_CP5_X * TILE, true),
   `x=${pitPb.player.x} y=${pitPb.player.y}`,
 );
@@ -313,8 +360,8 @@ assert(
 
 const dasher = settle(R3_TOP_C_X0, R3_CLIMB_C_TOP);
 assert(
-  "combo C 5-tile dash reaches CP6",
-  jumpDashTo(dasher.player, dasher.level, R3_CP6_X * TILE, true),
+  "combo C 4-tile dash reaches CP6",
+  jumpDashTo(dasher.player, dasher.level, R3_CP6_X * TILE, true, 0),
   `x=${dasher.player.x} y=${dasher.player.y}`,
 );
 
@@ -351,7 +398,7 @@ assert(
 assert("full Room3 run climbs combo C", climbNamedWall(full.player, full.level, R3_WALL_C_X, R3_CLIMB_C_TOP), `x=${full.player.x}`);
 assert(
   "full Room3 run dashes combo C",
-  jumpDashTo(full.player, full.level, R3_CP6_X * TILE, true),
+  jumpDashTo(full.player, full.level, R3_CP6_X * TILE, true, 0),
   `x=${full.player.x}`,
 );
 assert("full Room3 run drops into the finale", dropToFinaleFloor(full.player, full.level), `x=${full.player.x}`);

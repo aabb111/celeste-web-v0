@@ -138,19 +138,19 @@ function climbToWallTop(player: Player, level: ReturnType<typeof room2>) {
   return player.x >= R2_WALL_X0 * TILE - 4 && player.y <= R2_WALL_TOP * TILE - PLAYER_H + 8;
 }
 
-function jumpDashTo(player: Player, level: ReturnType<typeof room2>, destX: number, allowDash: boolean) {
+function jumpDashTo(player: Player, level: ReturnType<typeof room2>, destX: number, allowDash: boolean, aimY = 0) {
   if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
   for (let i = 0; i < 12; i++) {
     integratePlayer(player, hold(0, false), level, TICK);
     if (died(player, level)) return false;
     if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
   }
-  integratePlayer(player, hold(1, true, true, -1), level, TICK);
+  integratePlayer(player, hold(1, true, true, aimY), level, TICK);
   for (let i = 0; i < 8; i++) {
-    integratePlayer(player, hold(1, true, false, -1, allowDash && i === 7), level, TICK);
+    integratePlayer(player, hold(1, true, false, aimY, allowDash && i === 7), level, TICK);
   }
   for (let i = 0; i < 200; i++) {
-    integratePlayer(player, hold(1, true, false, allowDash ? -1 : 0), level, TICK);
+    integratePlayer(player, hold(1, true, false, allowDash ? aimY : 0), level, TICK);
     if (level.hitsFlag(playerRect(player)) || (player.onGround && player.x >= destX)) return true;
     if (died(player, level)) return false;
   }
@@ -249,16 +249,16 @@ assert(
 
 const dasher = settle(R2_CP3_X, R2_WALL_TOP);
 assert(
-  "5-tile dash from CP3 reaches the high ledge",
+  "4-tile dash from CP3 reaches the far bank",
   jumpDashTo(dasher.player, dasher.level, R2_DASH1_LAND_X0 * TILE, true),
   `x=${dasher.player.x} y=${dasher.player.y}`,
 );
 
 const jumper = settle(R2_CP3_X, R2_WALL_TOP);
 assert(
-  "pure jump cannot clear Room2 must-dash gap",
-  !jumpDashTo(jumper.player, jumper.level, R2_DASH1_LAND_X0 * TILE, false) &&
-    !jumper.level.hitsFlag(playerRect(jumper.player)),
+  "Room2 same-height 4-tile gap is jump-clearable",
+  jumpDashTo(jumper.player, jumper.level, R2_DASH1_LAND_X0 * TILE, false) ||
+    jumper.level.hitsFlag(playerRect(jumper.player)),
   `x=${jumper.player.x} y=${jumper.player.y}`,
 );
 
@@ -285,7 +285,7 @@ assert(
 );
 assert("full Room2 run climbs the wall", climbToWallTop(full.player, full.level), `x=${full.player.x} y=${full.player.y}`);
 assert(
-  "full Room2 run dashes the 5-tile gap",
+  "full Room2 run dashes the 4-tile gap",
   jumpDashTo(full.player, full.level, R2_DASH1_LAND_X0 * TILE, true),
   `x=${full.player.x} y=${full.player.y}`,
 );
