@@ -2,8 +2,8 @@ const LEFT = new Set(["ArrowLeft", "KeyA"]);
 const RIGHT = new Set(["ArrowRight", "KeyD"]);
 const DOWN = new Set(["ArrowDown", "KeyS"]);
 const UP = new Set(["ArrowUp", "KeyW"]);
-/** Jump is Space / C only. Up / W aim and climb — they never jump. */
-const JUMP = new Set(["Space", "KeyC"]);
+/** Jump is Space / C only. Up / W write moveY / aim — they never jump. */
+const JUMP_ONLY = new Set(["Space", "KeyC"]);
 const DASH = new Set(["KeyX"]);
 const GRAB = new Set(["KeyZ", "KeyV", "ShiftLeft"]);
 
@@ -71,6 +71,7 @@ function keyCodes(e: KeyboardEvent): string[] {
   if (key === "a" || key === "A") codes.push("KeyA");
   if (key === "s" || key === "S") codes.push("KeyS");
   if (key === "d" || key === "D") codes.push("KeyD");
+  if (key === "c" || key === "C") codes.push("KeyC");
   if (key === " " || key === "Spacebar") codes.push("Space");
   return codes;
 }
@@ -81,7 +82,7 @@ function isHandled(code: string) {
     RIGHT.has(code) ||
     DOWN.has(code) ||
     UP.has(code) ||
-    JUMP.has(code) ||
+    JUMP_ONLY.has(code) ||
     DASH.has(code) ||
     isGrabCode(code) ||
     code === "KeyR"
@@ -98,6 +99,10 @@ export function createInput(target: Window = window) {
   const onDown = (e: KeyboardEvent) => {
     const codes = keyCodes(e);
     if (codes.some(isHandled)) e.preventDefault();
+    // Latch Space / C on the press edge so a sub-frame tap cannot miss poll.
+    if (!e.repeat && codes.some((code) => JUMP_ONLY.has(code) && !keys.has(code))) {
+      virtual.jumpPulse = true;
+    }
     for (const code of codes) keys.add(code);
   };
   const onUp = (e: KeyboardEvent) => {
@@ -115,16 +120,17 @@ export function createInput(target: Window = window) {
       const downHeld = [...DOWN].some((k) => keys.has(k)) || virtual.down;
       const upHeld = [...UP].some((k) => keys.has(k)) || virtual.up;
       const grabHeld = [...GRAB].some((k) => keys.has(k)) || virtual.grab;
-      const jumpHeld = [...JUMP].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
+      const jumpHeld = [...JUMP_ONLY].some((k) => keys.has(k)) || virtual.jump || virtual.jumpPulse;
       const dashHeld = [...DASH].some((k) => keys.has(k)) || virtual.dash || virtual.dashPulse;
       const resetHeld = keys.has("KeyR") || virtual.reset || virtual.resetPulse;
       const aimUp = upHeld;
-      const jumpPressed = jumpHeld && !jumpWasDown;
+      const jumpPressed = virtual.jumpPulse || (jumpHeld && !jumpWasDown);
       const dashPressed = dashHeld && !dashWasDown;
       const resetPressed = resetHeld && !resetWasDown;
       jumpWasDown = jumpHeld;
       dashWasDown = dashHeld;
       resetWasDown = resetHeld;
+      // Pulse is consumed by this poll (main only polls when a tick will run).
       virtual.jumpPulse = false;
       virtual.dashPulse = false;
       virtual.resetPulse = false;

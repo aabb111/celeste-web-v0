@@ -26,28 +26,31 @@ function frame(now: number) {
   last = now;
   accumulator += raw;
 
-  const snapshot = input.poll();
-  let consumedJump = false;
-  let consumedDash = false;
-  let consumedReset = false;
+  // Poll only when a physics tick will consume edges — empty rAF must not eat jumpPulse.
+  if (accumulator >= TICK) {
+    const snapshot = input.poll();
+    let consumedJump = false;
+    let consumedDash = false;
+    let consumedReset = false;
 
-  while (accumulator >= TICK) {
-    const stepInput: InputState = {
-      x: snapshot.x,
-      y: snapshot.y,
-      moveY: snapshot.moveY,
-      jumpHeld: snapshot.jumpHeld,
-      jumpPressed: snapshot.jumpPressed && !consumedJump,
-      dashHeld: snapshot.dashHeld,
-      dashPressed: snapshot.dashPressed && !consumedDash,
-      grabHeld: snapshot.grabHeld,
-      resetPressed: snapshot.resetPressed && !consumedReset,
-    };
-    tick(game, stepInput);
-    consumedJump = consumedJump || stepInput.jumpPressed;
-    consumedDash = consumedDash || stepInput.dashPressed;
-    consumedReset = consumedReset || stepInput.resetPressed;
-    accumulator -= TICK;
+    while (accumulator >= TICK) {
+      const stepInput: InputState = {
+        x: snapshot.x,
+        y: snapshot.y,
+        moveY: snapshot.moveY,
+        jumpHeld: snapshot.jumpHeld,
+        jumpPressed: snapshot.jumpPressed && !consumedJump,
+        dashHeld: snapshot.dashHeld,
+        dashPressed: snapshot.dashPressed && !consumedDash,
+        grabHeld: snapshot.grabHeld,
+        resetPressed: snapshot.resetPressed && !consumedReset,
+      };
+      tick(game, stepInput);
+      consumedJump = consumedJump || stepInput.jumpPressed;
+      consumedDash = consumedDash || stepInput.dashPressed;
+      consumedReset = consumedReset || stepInput.resetPressed;
+      accumulator -= TICK;
+    }
   }
 
   paintGame(ctx, game);

@@ -42,6 +42,13 @@ assert(
 );
 input.virtual.jump = false;
 input.poll();
+input.virtual.jumpPulse = true;
+const padPulse = input.poll();
+assert(
+  "virtual Jump pulse still jumps without aiming up",
+  padPulse.jumpPressed && padPulse.jumpHeld && padPulse.y === 0,
+  `jump=${padPulse.jumpPressed} y=${padPulse.y}`,
+);
 input.virtual.up = true;
 input.virtual.right = true;
 const diagAim = input.poll();
