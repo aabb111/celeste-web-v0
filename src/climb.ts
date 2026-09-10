@@ -131,14 +131,29 @@ export function slipCheck(player: Player, level: Level, addY = 0): boolean {
   return !overlapsSolid(level, side, top + 4, 1, 1) && !overlapsSolid(level, side, top, 1, 1);
 }
 
+/** Climb vertical uses moveY only. Up / W must write moveY; jump keys never do. */
+export function climbMoveY(input: InputState): number {
+  return input.moveY;
+}
+
+/** Head probe inset so the held wall never counts as a ceiling. */
+function climbHeadBlocked(player: Player, level: Level): boolean {
+  const inset = 1;
+  const x = player.climbDir > 0 ? player.x : player.x + inset;
+  const w = Math.max(1, PLAYER_W - inset);
+  return overlapsSolid(level, x, player.y - 1, w, 1);
+}
+
 export function stepClimb(player: Player, input: InputState, level: Level, dt: number) {
   player.climbNoMove = Math.max(0, player.climbNoMove - dt);
   if (player.onGround) player.stamina = P.climbMaxStamina;
   player.facing = player.climbDir;
   player.vx = 0;
 
+  const climbY = climbMoveY(input);
   player.buffer = input.jumpPressed ? P.jumpBuffer : Math.max(0, player.buffer - dt);
-  if (player.buffer > 0) {
+  // Climb-up / climb-down wins over jump so ↑ cannot kick off the wall.
+  if (player.buffer > 0 && climbY === 0) {
     const away = input.x !== 0 && Math.sign(input.x) === -player.climbDir;
     if (away) wallJump(player, -player.climbDir as 1 | -1, true);
     else weakClimbJump(player);
@@ -161,11 +176,11 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
 
   let target = 0;
   let trySlip = false;
-  if (player.climbNoMove > 0) {
+  if (player.climbNoMove > 0 && climbY === 0) {
     trySlip = true;
-  } else if (input.moveY < 0) {
+  } else if (climbY < 0) {
     target = P.climbUpSpeed;
-    if (overlapsSolid(level, player.x, player.y - 1, PLAYER_W, 1)) {
+    if (climbHeadBlocked(player, level)) {
       if (player.vy < 0) player.vy = 0;
       target = 0;
       trySlip = true;
@@ -174,7 +189,7 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
       moveAndCollide(player, level, dt);
       return;
     }
-  } else if (input.moveY > 0) {
+  } else if (climbY > 0) {
     target = player.onGround ? 0 : P.climbDownSpeed;
     if (player.onGround && player.vy > 0) player.vy = 0;
   } else {
@@ -186,7 +201,7 @@ export function stepClimb(player: Player, input: InputState, level: Level, dt: n
 
   player.vy = approach(player.vy, target, P.climbAccel * dt);
 
-  if (input.moveY <= 0 && player.vy > 0 && !againstWallAt(player, level, 1)) {
+  if (climbY <= 0 && player.vy > 0 && !againstWallAt(player, level, 1)) {
     player.vy = 0;
   }
 

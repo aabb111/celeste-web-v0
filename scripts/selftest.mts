@@ -405,6 +405,40 @@ assert(
 );
 assert("climb up speed approaches ClimbUpSpeed", upCost.vy > P.climbUpSpeed - 1 && upCost.vy < P.climbUpSpeed + 8, `vy=${upCost.vy}`);
 
+const grabUp = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
+const grabUpLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(grabUp, hold(1, false), grabUpLevel, TICK);
+for (let i = 0; i < 8 && !grabUp.climbing; i++) {
+  integratePlayer(grabUp, hold(1, false, false, 0, false, true, 0), grabUpLevel, TICK);
+}
+assert("grab+Up setup is climbing", grabUp.climbing, `climb=${grabUp.climbing}`);
+const grabUpY0 = grabUp.y;
+const grabUpInp = hold(0, false, false, -1, false, true, -1);
+assert("grab+Up writes moveY=-1 and not jumpPressed", grabUpInp.moveY === -1 && !grabUpInp.jumpPressed && grabUpInp.grabHeld);
+let sawTarget = false;
+for (let i = 0; i < 24; i++) {
+  integratePlayer(grabUp, grabUpInp, grabUpLevel, TICK);
+  if (grabUp.climbing && grabUp.vy <= P.climbUpSpeed + 8) sawTarget = true;
+}
+assert("grab+Up always rises", grabUp.climbing && grabUp.y < grabUpY0 - 8, `y0=${grabUpY0} y=${grabUp.y} climb=${grabUp.climbing}`);
+assert("grab+Up applies ClimbUpSpeed -45", sawTarget && grabUp.vy <= P.climbUpSpeed + 8 && grabUp.vy >= P.climbUpSpeed - 1, `vy=${grabUp.vy}`);
+
+const climbWins = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
+const climbWinsLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(climbWins, hold(1, false), climbWinsLevel, TICK);
+for (let i = 0; i < 8 && !climbWins.climbing; i++) {
+  integratePlayer(climbWins, hold(1, false, false, 0, false, true, 0), climbWinsLevel, TICK);
+}
+const climbWinsY0 = climbWins.y;
+for (let i = 0; i < 16; i++) {
+  integratePlayer(climbWins, hold(0, true, i === 0, -1, false, true, -1), climbWinsLevel, TICK);
+}
+assert(
+  "while climbing, Up moveY wins over jumpPressed",
+  climbWins.climbing && climbWins.y < climbWinsY0 - 4 && climbWins.vy < 0,
+  `climb=${climbWins.climbing} y=${climbWins.y} vy=${climbWins.vy}`,
+);
+
 const yMid = upCost.y;
 let downVy = 0;
 for (let i = 0; i < 12; i++) {
@@ -686,6 +720,27 @@ input.poll();
 press("KeyC");
 const keyC = input.poll();
 assert("C jumps without writing aimY", keyC.jumpPressed && keyC.y === 0, `y=${keyC.y}`);
+release("KeyC");
+input.poll();
+press("KeyZ");
+press("ArrowUp");
+const grabUpKeys = input.poll();
+assert(
+  "Z+Up is grabHeld, moveY=-1, jumpPressed=0",
+  grabUpKeys.grabHeld && grabUpKeys.moveY === -1 && grabUpKeys.y === -1 && !grabUpKeys.jumpPressed,
+  `grab=${grabUpKeys.grabHeld} moveY=${grabUpKeys.moveY} jump=${grabUpKeys.jumpPressed}`,
+);
+
+const kbClimb = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
+const kbClimbLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(kbClimb, hold(1, false), kbClimbLevel, TICK);
+const kbY0 = kbClimb.y;
+for (let i = 0; i < 36; i++) integratePlayer(kbClimb, input.poll(), kbClimbLevel, TICK);
+assert(
+  "keyboard Z+Up climbs (vy→-45)",
+  kbClimb.climbing && kbClimb.y < kbY0 - 10 && kbClimb.vy <= P.climbUpSpeed + 8 && kbClimb.vy >= P.climbUpSpeed - 1,
+  `climb=${kbClimb.climbing} y0=${kbY0} y=${kbClimb.y} vy=${kbClimb.vy}`,
+);
 
 const cam = createGame();
 assert("camera starts at room left", cam.camera.x === 0 && cam.camera.y === 0);

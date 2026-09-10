@@ -59,6 +59,35 @@ function isGrabCode(code: string) {
   return GRAB.has(code);
 }
 
+/** Normalize so ArrowUp / W always register even when `e.code` is empty. */
+function keyCodes(e: KeyboardEvent): string[] {
+  const codes = e.code ? [e.code] : [];
+  const key = e.key;
+  if (key === "ArrowUp" || key === "Up") codes.push("ArrowUp");
+  if (key === "ArrowDown" || key === "Down") codes.push("ArrowDown");
+  if (key === "ArrowLeft" || key === "Left") codes.push("ArrowLeft");
+  if (key === "ArrowRight" || key === "Right") codes.push("ArrowRight");
+  if (key === "w" || key === "W") codes.push("KeyW");
+  if (key === "a" || key === "A") codes.push("KeyA");
+  if (key === "s" || key === "S") codes.push("KeyS");
+  if (key === "d" || key === "D") codes.push("KeyD");
+  if (key === " " || key === "Spacebar") codes.push("Space");
+  return codes;
+}
+
+function isHandled(code: string) {
+  return (
+    LEFT.has(code) ||
+    RIGHT.has(code) ||
+    DOWN.has(code) ||
+    UP.has(code) ||
+    JUMP.has(code) ||
+    DASH.has(code) ||
+    isGrabCode(code) ||
+    code === "KeyR"
+  );
+}
+
 export function createInput(target: Window = window) {
   const keys = new Set<string>();
   const virtual = createVirtualPad();
@@ -67,22 +96,12 @@ export function createInput(target: Window = window) {
   let resetWasDown = false;
 
   const onDown = (e: KeyboardEvent) => {
-    if (
-      LEFT.has(e.code) ||
-      RIGHT.has(e.code) ||
-      DOWN.has(e.code) ||
-      UP.has(e.code) ||
-      JUMP.has(e.code) ||
-      DASH.has(e.code) ||
-      isGrabCode(e.code) ||
-      e.code === "KeyR"
-    ) {
-      e.preventDefault();
-    }
-    keys.add(e.code);
+    const codes = keyCodes(e);
+    if (codes.some(isHandled)) e.preventDefault();
+    for (const code of codes) keys.add(code);
   };
   const onUp = (e: KeyboardEvent) => {
-    keys.delete(e.code);
+    for (const code of keyCodes(e)) keys.delete(code);
   };
 
   target.addEventListener("keydown", onDown);
