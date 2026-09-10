@@ -220,6 +220,11 @@ for (let i = 0; i < 8 && (diag.dashLaunch || diag.dashFreeze > 0); i++) {
 }
 const diagComp = P.dashSpeed / Math.SQRT2;
 assert("8-way diagonal is normalized", Math.abs(diag.vx - diagComp) < 1 && Math.abs(diag.vy + diagComp) < 1, `vx=${diag.vx} vy=${diag.vy}`);
+assert(
+  "diagonal dash total speed equals flat dash 240",
+  Math.abs(Math.hypot(diag.vx, diag.vy) - P.dashSpeed) < 1,
+  `speed=${Math.hypot(diag.vx, diag.vy)}`,
+);
 
 const facingDash = settleOnSpawn();
 facingDash.facing = -1;
@@ -385,6 +390,36 @@ assert(
   stamUp0 - upCost.stamina > 18 && stamUp0 - upCost.stamina < 28,
   `d=${stamUp0 - upCost.stamina}`,
 );
+assert("climb up speed approaches ClimbUpSpeed", upCost.vy > P.climbUpSpeed - 1 && upCost.vy < P.climbUpSpeed + 8, `vy=${upCost.vy}`);
+
+const yMid = upCost.y;
+let downVy = 0;
+for (let i = 0; i < 12; i++) {
+  integratePlayer(upCost, hold(0, false, false, 0, false, true, 1), upLevel, TICK);
+  if (upCost.climbing && !upCost.onGround) downVy = upCost.vy;
+}
+assert("climb down is faster than climb up", upCost.y > yMid && downVy > Math.abs(P.climbUpSpeed), `dy=${upCost.y - yMid} vy=${downVy}`);
+assert("climb down speed approaches ClimbDownSpeed", downVy > 50 && downVy <= P.climbDownSpeed + 1, `vy=${downVy}`);
+
+for (let i = 0; i < 20 && upCost.climbing && !upCost.onGround; i++) {
+  integratePlayer(upCost, hold(0, false, false, 0, false, true, 0), upLevel, TICK);
+}
+assert("release vertical aim stops climb (vy→0)", upCost.climbing && Math.abs(upCost.vy) < 2, `vy=${upCost.vy} climb=${upCost.climbing}`);
+
+const intoWall = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
+const intoLevel = createLevel();
+for (let i = 0; i < 20; i++) integratePlayer(intoWall, hold(1, false), intoLevel, TICK);
+for (let i = 0; i < 8 && !intoWall.climbing; i++) {
+  integratePlayer(intoWall, hold(1, false, false, 0, false, true, 0), intoLevel, TICK);
+}
+const stamInto = intoWall.stamina;
+integratePlayer(intoWall, hold(1, true, true, 0, false, true, 0), intoLevel, TICK);
+assert(
+  "hold-into-wall jump is still WallJump away",
+  intoWall.vx <= -P.wallJumpHSpeed + 1 && !intoWall.climbing,
+  `vx=${intoWall.vx} climb=${intoWall.climbing}`,
+);
+assert("hold-into-wall WallJump spends no ClimbJumpCost", stamInto - intoWall.stamina < 1, `d=${stamInto - intoWall.stamina}`);
 
 const tired = createPlayer((WALL_X0 - 1) * TILE, 70);
 const tiredLevel = createLevel();
@@ -419,8 +454,16 @@ for (let i = 0; i < 24 && cJump.onGround; i++) {
 }
 const stamJump = cJump.stamina;
 integratePlayer(cJump, hold(0, true, true, 0, false, true, 0), cJumpLevel, TICK);
-assert("neutral grab jump is ClimbJump", !cJump.climbing && cJump.vy <= P.jumpVelocity + 1, `vy=${cJump.vy} climb=${cJump.climbing}`);
-assert("ClimbJump costs stamina", stamJump - cJump.stamina >= P.climbJumpCost - 0.01, `d=${stamJump - cJump.stamina}`);
+assert(
+  "grab jump is WallJump away from wall",
+  !cJump.climbing &&
+    cJump.vx <= -P.wallJumpHSpeed + 1 &&
+    cJump.vy <= P.jumpVelocity + 1 &&
+    cJump.jumpTimer === P.varJumpTime &&
+    cJump.forceMoveXTimer === P.wallJumpForceTime,
+  `vx=${cJump.vx} vy=${cJump.vy} climb=${cJump.climbing} force=${cJump.forceMoveXTimer}`,
+);
+assert("WallJump does not spend ClimbJumpCost", stamJump - cJump.stamina < 1, `d=${stamJump - cJump.stamina}`);
 
 const wJump = createPlayer(WALL_APPROACH, CLIMB_BASE * TILE - PLAYER_H);
 const wJumpLevel = createLevel();

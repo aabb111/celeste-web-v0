@@ -207,7 +207,7 @@ function applyJump(player: Player, input: InputState, level: Level, dt: number) 
     player.wallSlideTimer = P.wallSlideTime;
     return;
   }
-  tryWallJump(player, input, level);
+  tryWallJump(player, level);
 }
 
 export function isOutOfBounds(player: Player): boolean {

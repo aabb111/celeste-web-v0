@@ -15,6 +15,7 @@ input.virtual.grab = true;
 input.virtual.up = true;
 const climbUp = input.poll();
 assert("grab+up climbs", climbUp.moveY === -1 && climbUp.grabHeld && !climbUp.jumpHeld);
+assert("grab+up still writes input.y for dash aim", climbUp.y === -1, `y=${climbUp.y}`);
 
 input.virtual.up = false;
 const grabHold = input.poll();
@@ -24,6 +25,17 @@ input.virtual.grab = false;
 input.virtual.up = true;
 const jumpUp = input.poll();
 assert("up without grab jumps", jumpUp.jumpHeld && jumpUp.moveY === -1 && !jumpUp.grabHeld);
+
+assert("virtual pad Up writes input.y", jumpUp.y === -1, `y=${jumpUp.y}`);
+
+input.virtual.right = true;
+const diagAim = input.poll();
+assert(
+  "pad Up+Right is diagonal dash aim",
+  diagAim.x === 1 && diagAim.y === -1 && diagAim.moveY === -1,
+  `x=${diagAim.x} y=${diagAim.y} moveY=${diagAim.moveY}`,
+);
+input.virtual.right = false;
 
 input.virtual.up = false;
 input.virtual.down = true;
